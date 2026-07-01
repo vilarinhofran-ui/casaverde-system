@@ -97,6 +97,11 @@ select:focus-visible {
   font-size: clamp(1.2rem, 2vw, 1.7rem);
 }
 
+.brand-title {
+  display: inline-block;
+  line-height: 1.05;
+}
+
 .brand-logo {
   width: 44px;
   height: 44px;
@@ -385,6 +390,22 @@ main {
   gap: 12px;
 }
 
+.category-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.category-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
 .product-card {
   background: #fff;
   border: 1px solid var(--line);
@@ -434,6 +455,28 @@ main {
 .brands,
 .engagement {
   margin-top: 28px;
+}
+
+.trust-section {
+  margin-top: 28px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.trust-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.trust-grid article {
+  border: 1px dashed #c7dbd0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f9fcfa;
 }
 
 .services-grid {
@@ -500,6 +543,35 @@ main {
   grid-template-columns: 1fr 1fr;
 }
 
+.review-cta-grid {
+  margin-top: 12px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.review-highlight {
+  border: 1px dashed #c7dbd0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f8fcf9;
+  display: grid;
+  gap: 10px;
+}
+
+.review-list {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.review-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
 .engagement input,
 .engagement select {
   margin-top: 8px;
@@ -529,7 +601,7 @@ main {
   transition: transform 220ms ease;
   z-index: 45;
   display: grid;
-  grid-template-rows: auto 1fr auto auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 12px;
 }
 
@@ -556,6 +628,7 @@ main {
   display: grid;
   gap: 8px;
   align-content: start;
+  padding-right: 4px;
 }
 
 .cart-item {
@@ -564,12 +637,24 @@ main {
   padding: 10px;
   display: grid;
   gap: 8px;
+  background: #fafdfb;
 }
 
 .qty-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cart-footer {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  display: grid;
+  gap: 10px;
+  max-height: 54vh;
+  overflow: auto;
 }
 
 .qty-btn,
@@ -623,6 +708,13 @@ iframe.product-media {
 .checkout-form {
   display: grid;
   gap: 8px;
+}
+
+.account-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .customer-account {
@@ -690,6 +782,24 @@ iframe.product-media {
   color: #fff;
   text-align: center;
   padding: 28px 16px;
+}
+
+.footer-contact {
+  margin-top: 8px;
+}
+
+.footer-links {
+  margin-top: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: #fff;
+  text-decoration: underline;
+  font-weight: 700;
 }
 
 .footer-instagram {
@@ -791,6 +901,16 @@ iframe.product-media {
   background: #f6f9fb;
 }
 
+.apple-btn {
+  background: #121212;
+  border: 1px solid #121212;
+  color: #ffffff;
+}
+
+.apple-btn:hover {
+  background: #242424;
+}
+
 .code-card h2 {
   font-size: 1.2rem;
 }
@@ -864,7 +984,8 @@ iframe.product-media {
 
   .hero,
   .catalog-layout,
-  .engagement {
+  .engagement,
+  .review-cta-grid {
     grid-template-columns: 1fr;
   }
 
@@ -875,7 +996,8 @@ iframe.product-media {
   .benefits,
   .services-grid,
   .brand-list,
-  .admin-metrics {
+  .admin-metrics,
+  .trust-grid {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 }
@@ -885,7 +1007,8 @@ iframe.product-media {
   .services-grid,
   .brand-list,
   .engagement,
-  .admin-metrics {
+  .admin-metrics,
+  .trust-grid {
     grid-template-columns: 1fr;
   }
 

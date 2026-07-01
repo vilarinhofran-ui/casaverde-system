@@ -28,6 +28,7 @@ import {
   registerCustomerAccount,
   toggleFavorite,
 } from "./modules/users.js";
+import { getOAuthLaunchResult } from "./core/oauth.js";
 
 const currency = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -47,6 +48,10 @@ const state = {
 };
 
 const SAFE_MEDIA_PROTOCOLS = ["http:", "https:", "data:"];
+const OAUTH_FLASH_KEY = "casaverde_oauth_flash";
+const REVIEWS_KEY = "casaverde_google_reviews_local";
+const GOOGLE_REVIEW_URL =
+  "https://www.google.com/search?q=casa+verde+E+FLORA&sca_esv=05ee508a17931f71&sxsrf=APpeQnt5XiVImOga6rlVUvu_nGYid4Tw-g%3A1782938568935&ei=yHtFarLBOPmp1sQP_5OZmAs&biw=1280&bih=551&ved=0ahUKEwiyxbrgq7KVAxX5lJUCHf9JBrMQ4dUDCBI&uact=5&oq=casa+verde+E+FLORA&gs_lp=Egxnd3Mtd2l6LXNlcnAiEmNhc2EgdmVyZGUgRSBGTE9SQTIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIFEAAY7wVIgBtQvQNYtxdwAngBkAEAmAG1AaABlwqqAQMwLjm4AQPIAQD4AQGYAgugAtkKwgIKEAAYRxjWBBiwA8ICDRAAGIAEGIoFGEMYsAPCAg4QABjkAhjWBBiwA9gBAcICExAuGEMYgAQYigUYyAMYsAPYAQHCAhMQLhiABBiKBRhDGMgDGLAD2AEBwgIFEAAYgATCAg4QLhivARjHARiABBiOBcICCxAuGK8BGMcBGIAEwgIKEAAYgAQYigUYQ8ICCxAuGIAEGMcBGK8BwgIKEAAYgAQYFBiHAsICCBAAGAgYHhgNmAMAiAYBkAYRugYGCAEQARgJkgcDMi45oAfjPbIHAzAuObgHyQrCBwcwLjEuOC4yyAcygAgB&sclient=gws-wiz-serp#sv=CAESzQEKuQEStgEKd0FKaVQ0dEk5MEZPU1c3OEFNUkNlRHVkVDJLbDZZY3VaOGZfcHFuYzlrRHQ4VFlvWWFDUVJPaDZVWTBVUG5tUVpNb1h5cmtrMzdxa09jME5BNzVXd3BuNTROeGVwVHdsaVFxcVNBRFJnZXE5b04xMzVCZUpvMHpREhcxSHRGYXJDWExPMzMxc1FQMDhQMWdBbxoiQURzcjlmUklxeWNaeU5pSmtIeVhpM3B2ei1jeE85c0dIdxIEODA1MRoBMyoAMAA4AUAAGAAgj7nz2AZKAhAC";
 
 function el(id) {
   return document.getElementById(id);
@@ -232,13 +237,29 @@ function updateHeaderCounters() {
   el("cart-count").textContent = String(cartCount);
 }
 
+function listLocalReviews() {
+  try {
+    return JSON.parse(localStorage.getItem(REVIEWS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalReview(review) {
+  const current = listLocalReviews();
+  localStorage.setItem(
+    REVIEWS_KEY,
+    JSON.stringify([review, ...current].slice(0, 8)),
+  );
+}
+
 function renderShippingFeedback() {
   const totals = calculateTotals(getCart(), getProductById, checkoutOptions());
   const feedback = el("shipping-feedback");
   const mode = checkoutOptions().deliveryMode;
 
   if (mode === "pickup") {
-    feedback.textContent = "Retirada na loja selecionada: frete gratis.";
+    feedback.textContent = "Retirada na loja selecionada: frete grátis.";
     return totals;
   }
 
@@ -260,7 +281,7 @@ function renderCart() {
   }
 
   if (items.length === 0) {
-    itemsEl.innerHTML = `<p class="empty-state">Sua sacola esta vazia.</p>`;
+    itemsEl.innerHTML = `<p class="empty-state">Sua sacola está vazia.</p>`;
   } else {
     itemsEl.innerHTML = items
       .map(
@@ -268,7 +289,7 @@ function renderCart() {
         <article class="cart-item">
           <div>
             <h4>${item.product.name}</h4>
-            <p>${currency.format(item.product.price)} cada</p>
+            <p>${currency.format(item.product.price)} cada unidade</p>
           </div>
           <div class="qty-row">
             <button class="qty-btn" data-action="decrease" data-product-id="${item.productId}" type="button">-</button>
@@ -563,13 +584,66 @@ function bindEngagementForms() {
 
     if (!order) {
       el("tracking-feedback").textContent =
-        "Pedido nao encontrado. Confira o codigo e tente novamente.";
+        "Pedido não encontrado. Confira o código e tente novamente.";
       return;
     }
 
     el("tracking-feedback").textContent =
       `Pedido ${order.id.toUpperCase()} | Status: ${order.status} | Total: ${currency.format(order.totals.total)}`;
   });
+
+  el("review-form")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const name = normalizeText(el("review-name")?.value, 80);
+    const rating = String(el("review-rating")?.value || "");
+    const text = normalizeText(el("review-text")?.value, 180);
+
+    if (!name || !rating || !text) {
+      el("review-feedback").textContent =
+        "Preencha nome, nota e comentário para continuar.";
+      return;
+    }
+
+    saveLocalReview({
+      name,
+      rating,
+      text,
+      createdAt: new Date().toISOString(),
+    });
+
+    renderReviews();
+    el("review-feedback").textContent =
+      "Avaliação registrada. Redirecionando para o Google...";
+    el("review-form").reset();
+    window.open(GOOGLE_REVIEW_URL, "_blank", "noopener,noreferrer");
+  });
+}
+
+function renderReviews() {
+  const container = el("review-list");
+  if (!container) {
+    return;
+  }
+
+  const reviews = listLocalReviews();
+  if (!reviews.length) {
+    container.innerHTML =
+      '<p class="empty-state">Ainda não há avaliações registradas localmente.</p>';
+    return;
+  }
+
+  container.innerHTML = reviews
+    .map(
+      (review) => `
+      <article class="review-card">
+        <strong>${escapeHtml(review.name)}</strong>
+        <p class="rating">${"★".repeat(Number(review.rating))}${"☆".repeat(5 - Number(review.rating))}</p>
+        <p>${escapeHtml(review.text)}</p>
+      </article>
+    `,
+    )
+    .join("");
 }
 
 function renderCustomerOrders(customerId) {
@@ -611,6 +685,8 @@ function renderCustomerSession() {
   const session = getCustomerSession();
   const label = el("customer-session-label");
 
+  updateAdminLinksVisibility(session);
+
   if (!session) {
     label.textContent = "Entre para acompanhar seus pedidos automaticamente.";
     el("checkout-name").value = "";
@@ -618,15 +694,58 @@ function renderCustomerSession() {
     return;
   }
 
-  label.textContent = `Conta ativa: ${session.name} (${session.email})`;
+  label.textContent = `Conta ativa: ${session.name} (${session.email}) | Perfil: ${session.role || "customer"}`;
   el("checkout-name").value = session.name;
   renderCustomerOrders(session.customerId);
+}
+
+function updateAdminLinksVisibility(session) {
+  const role = String(session?.role || "").toLowerCase();
+  const isAdmin = role === "admin" || role === "super_admin";
+  ["admin-link", "erp-link", "pdv-link"].forEach((id) => {
+    const link = el(id);
+    if (!link) {
+      return;
+    }
+
+    link.classList.toggle("hidden", !isAdmin);
+  });
+}
+
+function consumeOAuthFlash() {
+  try {
+    const raw = sessionStorage.getItem(OAUTH_FLASH_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    sessionStorage.removeItem(OAUTH_FLASH_KEY);
+    return JSON.parse(raw);
+  } catch {
+    sessionStorage.removeItem(OAUTH_FLASH_KEY);
+    return null;
+  }
 }
 
 function bindCustomerAccount() {
   const registerForm = el("customer-register-form");
   const loginForm = el("customer-login-form");
   const feedback = el("customer-auth-feedback");
+  const registerModeBtn = el("auth-mode-register");
+  const loginModeBtn = el("auth-mode-login");
+
+  function setAuthMode(mode) {
+    const isRegister = mode === "register";
+    registerForm?.classList.toggle("hidden", !isRegister);
+    loginForm?.classList.toggle("hidden", isRegister);
+    registerModeBtn?.classList.toggle("primary", isRegister);
+    registerModeBtn?.classList.toggle("secondary", !isRegister);
+    loginModeBtn?.classList.toggle("primary", !isRegister);
+    loginModeBtn?.classList.toggle("secondary", isRegister);
+  }
+
+  registerModeBtn?.addEventListener("click", () => setAuthMode("register"));
+  loginModeBtn?.addEventListener("click", () => setAuthMode("login"));
 
   registerForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -639,7 +758,7 @@ function bindCustomerAccount() {
     });
 
     feedback.textContent = response.ok
-      ? "Conta criada com sucesso. Agora faca login para acompanhar pedidos."
+      ? "Conta criada com sucesso. Agora faça login para acompanhar pedidos."
       : response.message;
 
     if (response.ok) {
@@ -667,8 +786,28 @@ function bindCustomerAccount() {
 
   el("customer-logout")?.addEventListener("click", () => {
     logoutCustomerAccount();
-    feedback.textContent = "Sessao encerrada.";
+    feedback.textContent = "Sessão encerrada.";
     renderCustomerSession();
+  });
+
+  el("customer-google-login")?.addEventListener("click", () => {
+    const result = getOAuthLaunchResult("google", "customer");
+    if (!result.ok) {
+      feedback.textContent = result.message;
+      return;
+    }
+
+    window.location.href = result.authUrl;
+  });
+
+  el("customer-apple-login")?.addEventListener("click", () => {
+    const result = getOAuthLaunchResult("apple", "customer");
+    if (!result.ok) {
+      feedback.textContent = result.message;
+      return;
+    }
+
+    window.location.href = result.authUrl;
   });
 
   el("customer-area-btn")?.addEventListener("click", () => {
@@ -676,6 +815,17 @@ function bindCustomerAccount() {
       behavior: "smooth",
     });
   });
+
+  setAuthMode("login");
+
+  const oauthFlash = consumeOAuthFlash();
+  if (oauthFlash) {
+    feedback.textContent = oauthFlash.message;
+    renderCustomerSession();
+    document.getElementById("customer-account").scrollIntoView({
+      behavior: "smooth",
+    });
+  }
 }
 
 function bindShortcuts() {
@@ -717,9 +867,11 @@ function bindShortcuts() {
 }
 
 function start() {
+  updateAdminLinksVisibility(getCustomerSession());
   populateFilterSelects();
   renderHighlights();
   renderProducts();
+  renderReviews();
   renderCart();
   renderCustomerSession();
   updateHeaderCounters();

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Produtos - Casa Verde</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Merriweather:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" defer src="produtos.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html">
+        <img
+          src="logo-casaverde.jpg"
+          alt="Logo Casa Verde"
+          class="brand-logo"
+        />
+        <span class="brand-title">Casa Verde<br />Pet e Flora</span>
+      </a>
+      <form id="products-search-form" class="search-box" role="search">
+        <input
+          id="products-search-input"
+          type="search"
+          placeholder="Buscar produtos..."
+        />
+        <button type="submit">Buscar</button>
+      </form>
+      <div class="header-actions">
+        <a href="categorias.html" class="ghost-link">Categorias</a>
+        <a href="index.html" class="ghost-link">Loja completa</a>
+      </div>
+    </header>
+
+    <main class="section admin-wrap">
+      <h1>Página de Produtos</h1>
+      <p>Catálogo separado para navegação rápida de itens.</p>
+
+      <section class="catalog-layout">
+        <aside class="filters">
+          <h2>Filtros</h2>
+          <label for="products-species-filter">Espécie</label>
+          <select id="products-species-filter"></select>
+
+          <label for="products-category-filter">Categoria</label>
+          <select id="products-category-filter"></select>
+
+          <label for="products-sort-filter">Ordenar por</label>
+          <select id="products-sort-filter">
+            <option value="relevance">Relevância</option>
+            <option value="price-asc">Menor preço</option>
+            <option value="price-desc">Maior preço</option>
+            <option value="rating">Melhor avaliação</option>
+            <option value="delivery">Entrega mais rapida</option>
+          </select>
+
+          <button
+            id="products-clear-filters"
+            class="btn secondary"
+            type="button"
+          >
+            Limpar filtros
+          </button>
+        </aside>
+
+        <section class="catalog-content">
+          <div class="catalog-head">
+            <h2>Produtos encontrados</h2>
+            <p id="products-results-count"></p>
+          </div>
+          <div id="products-grid" class="product-grid"></div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

@@ -6,6 +6,7 @@ import {
   startGoogleAdminLogin,
   verifyAdminCode,
 } from "./core/auth.js";
+import { getOAuthLaunchResult } from "./core/oauth.js";
 import { navigateTo } from "./core/router.js";
 
 if (isAuthenticated()) {
@@ -69,11 +70,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   googleBtn?.addEventListener("click", () => {
+    const oauth = getOAuthLaunchResult("google", "admin");
+
+    if (oauth.ok) {
+      window.location.href = oauth.authUrl;
+      return;
+    }
+
     const response = startGoogleAdminLogin();
 
     if (!response.ok) {
       if (errorEl) {
-        errorEl.textContent = "Nao foi possivel iniciar login com Google.";
+        errorEl.textContent =
+          oauth.message || "Nao foi possivel iniciar login com Google.";
       }
       return;
     }

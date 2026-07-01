@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://casaverdepet.com.br/sitemap.xml

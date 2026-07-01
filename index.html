@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
+      name="description"
+      content="Casa Verde Pet e Flora: e-commerce pet com catalogo completo, entrega rapida, retirada em loja e acompanhamento de pedidos."
+    />
+    <meta name="theme-color" content="#1f6b45" />
+    <meta property="og:title" content="Casa Verde Pet e Flora" />
+    <meta
+      property="og:description"
+      content="Compre produtos pet com entrega rapida e acompanhamento de pedido."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="logo-casaverde.jpg" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; img-src 'self' data: https:; media-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; frame-src https://www.youtube.com https://youtube.com; base-uri 'self'; form-action 'self'; object-src 'none'"
     />
@@ -20,14 +34,27 @@
       rel="stylesheet"
     />
     <link rel="icon" type="image/jpeg" href="logo-casaverde.jpg" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="style.css" />
     <script type="module" defer src="script.js"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Casa Verde Pet e Flora",
+        "url": "https://casaverdepet.com.br",
+        "logo": "logo-casaverde.jpg",
+        "sameAs": [
+          "https://www.instagram.com/casaverdepeteflora?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+        ]
+      }
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#catalogo">Pular para catalogo</a>
 
     <div class="promo-bar">
-      Frete gratis acima de R$ 199 | Cupom de boas-vindas: CASAVERDE10 | Siga no
+      Frete grátis acima de R$ 199 | Cupom de boas-vindas: CASAVERDE10 | Siga no
       Instagram
     </div>
 
@@ -38,7 +65,7 @@
           alt="Logo Casa Verde"
           class="brand-logo"
         />
-        <span>Casa Verde Pet e Flora</span>
+        <span class="brand-title">Casa Verde<br />Pet e Flora</span>
       </a>
 
       <form id="search-form" class="search-box" role="search">
@@ -52,14 +79,16 @@
       </form>
 
       <div class="header-actions">
+        <a href="produtos.html" class="ghost-link">Produtos</a>
+        <a href="categorias.html" class="ghost-link">Categorias</a>
         <button id="customer-area-btn" class="ghost-link" type="button">
           Minha conta
         </button>
-        <a href="admin.html" class="ghost-link">Admin</a>
-        <a href="erp.html" class="ghost-link">ERP</a>
-        <a href="pdv.html" class="ghost-link">PDV</a>
+        <a id="admin-link" href="admin.html" class="ghost-link hidden">Admin</a>
+        <a id="erp-link" href="erp.html" class="ghost-link hidden">ERP</a>
+        <a id="pdv-link" href="pdv.html" class="ghost-link hidden">PDV</a>
         <a
-          href="https://www.instagram.com/"
+          href="https://www.instagram.com/casaverdepeteflora?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
           target="_blank"
           rel="noopener noreferrer"
           class="instagram-link"
@@ -86,8 +115,9 @@
     </nav>
 
     <nav class="quick-nav" aria-label="Atalhos da pagina">
-      <a href="#catalogo">Catalogo</a>
-      <a href="#servicos">Servicos</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="categorias.html">Categorias</a>
+      <a href="#servicos">Serviços</a>
       <a href="#marcas">Marcas</a>
       <a href="#customer-account">Minha conta</a>
     </nav>
@@ -95,15 +125,16 @@
     <main>
       <section class="hero">
         <div class="hero-text">
-          <p class="eyebrow">Loja pet com experiencia completa</p>
-          <h1>Tudo para o seu pet, da racao ao cuidado especializado</h1>
+          <p class="eyebrow">Loja pet com experiência completa</p>
+          <h1>Tudo para o seu pet, da ração ao cuidado especializado</h1>
           <p>
-            Catalogo por especie, entrega rapida, farmacia pet, assinatura,
+            Catálogo por espécie, entrega rápida, farmácia pet, assinatura,
             favoritos e checkout inteligente.
           </p>
           <div class="hero-actions">
-            <a class="btn primary" href="#catalogo">Explorar catalogo</a>
-            <a class="btn secondary" href="#servicos">Conhecer servicos</a>
+            <a class="btn primary" href="produtos.html">Ver produtos</a>
+            <a class="btn secondary" href="categorias.html">Ver categorias</a>
+            <a class="btn secondary" href="#servicos">Conhecer serviços</a>
           </div>
         </div>
         <div class="hero-cards" id="highlights"></div>
@@ -115,8 +146,8 @@
           <p>Entrega no mesmo dia para itens selecionados.</p>
         </article>
         <article>
-          <h3>Frete gratis Brasil</h3>
-          <p>Compras acima de R$ 199 com envio gratis.</p>
+          <h3>Frete grátis Brasil</h3>
+          <p>Compras acima de R$ 199 com envio grátis.</p>
         </article>
         <article>
           <h3>Retire na loja</h3>
@@ -132,7 +163,7 @@
         <aside class="filters">
           <h2>Filtros</h2>
 
-          <label for="species-filter">Especie</label>
+          <label for="species-filter">Espécie</label>
           <select id="species-filter"></select>
 
           <label for="category-filter">Categoria</label>
@@ -140,15 +171,15 @@
 
           <label for="sort-filter">Ordenar por</label>
           <select id="sort-filter">
-            <option value="relevance">Relevancia</option>
-            <option value="price-asc">Menor preco</option>
-            <option value="price-desc">Maior preco</option>
-            <option value="rating">Melhor avaliacao</option>
+            <option value="relevance">Relevância</option>
+            <option value="price-asc">Menor preço</option>
+            <option value="price-desc">Maior preço</option>
+            <option value="rating">Melhor avaliação</option>
             <option value="delivery">Entrega mais rapida</option>
           </select>
 
           <label for="price-filter"
-            >Preco maximo: <span id="price-value">R$ 350</span></label
+            >Preço máximo: <span id="price-value">R$ 350</span></label
           >
           <input
             id="price-filter"
@@ -184,22 +215,22 @@
       </section>
 
       <section id="servicos" class="services">
-        <h2>Servicos e cuidados essenciais</h2>
+        <h2>Serviços e cuidados essenciais</h2>
         <div class="services-grid">
           <article>
             <h3>Banho e tosa</h3>
-            <p>Agendamento rapido com historico no perfil.</p>
+            <p>Agendamento rápido com histórico no perfil.</p>
           </article>
           <article>
             <h3>Vet online</h3>
-            <p>Orientacao inicial para duvidas de saude.</p>
+            <p>Orientação inicial para dúvidas de saúde.</p>
           </article>
           <article>
             <h3>Assinatura inteligente</h3>
             <p>Receba itens recorrentes com desconto.</p>
           </article>
           <article>
-            <h3>Clube de beneficios</h3>
+            <h3>Clube de benefícios</h3>
             <p>Cashback e ofertas personalizadas para tutores.</p>
           </article>
         </div>
@@ -220,7 +251,7 @@
       <section class="engagement">
         <form id="newsletter-form" class="newsletter-card">
           <h3>Receba ofertas e dicas semanais</h3>
-          <p>Cadastro gratuito para cupons e conteudos sobre bem-estar pet.</p>
+          <p>Cadastro gratuito para cupons e conteúdos sobre bem-estar pet.</p>
           <input
             id="newsletter-email"
             type="email"
@@ -250,6 +281,29 @@
             Entre para acompanhar seus pedidos automaticamente.
           </p>
 
+          <div
+            class="account-mode-switch"
+            role="tablist"
+            aria-label="Acesso da conta"
+          >
+            <button
+              id="auth-mode-register"
+              class="btn secondary"
+              type="button"
+              data-auth-mode="register"
+            >
+              Cadastrar conta
+            </button>
+            <button
+              id="auth-mode-login"
+              class="btn primary"
+              type="button"
+              data-auth-mode="login"
+            >
+              Entrar
+            </button>
+          </div>
+
           <form id="customer-register-form" class="checkout-form">
             <label for="register-name">Criar conta</label>
             <input id="register-name" type="text" placeholder="Nome completo" />
@@ -263,13 +317,29 @@
             <button class="btn secondary" type="submit">Cadastrar</button>
           </form>
 
-          <form id="customer-login-form" class="checkout-form">
+          <form id="customer-login-form" class="checkout-form hidden">
             <label for="login-email">Entrar na conta</label>
             <input id="login-email" type="email" placeholder="E-mail" />
             <input id="login-password" type="password" placeholder="Senha" />
             <button class="btn primary" type="submit">Entrar</button>
             <button id="customer-logout" class="btn secondary" type="button">
               Sair da conta
+            </button>
+
+            <div class="auth-divider"><span>ou</span></div>
+            <button
+              id="customer-google-login"
+              class="btn google-btn"
+              type="button"
+            >
+              Continuar com Google
+            </button>
+            <button
+              id="customer-apple-login"
+              class="btn apple-btn"
+              type="button"
+            >
+              Continuar com Apple
             </button>
           </form>
 
@@ -281,6 +351,79 @@
           </div>
         </section>
       </section>
+
+      <section class="trust-section" id="avaliacoes">
+        <h2>Avaliações no Google</h2>
+        <p>
+          Registre sua experiência e seja redirecionado para avaliar a Casa
+          Verde Pet e Flora no Google.
+        </p>
+        <div class="review-cta-grid">
+          <article class="review-highlight">
+            <h3>Avaliação pública</h3>
+            <p>
+              Clique no botão abaixo para abrir a página oficial de avaliação no
+              Google.
+            </p>
+            <a
+              id="google-review-link"
+              class="btn primary"
+              href="https://www.google.com/search?q=casa+verde+E+FLORA&sca_esv=05ee508a17931f71&sxsrf=APpeQnt5XiVImOga6rlVUvu_nGYid4Tw-g%3A1782938568935&ei=yHtFarLBOPmp1sQP_5OZmAs&biw=1280&bih=551&ved=0ahUKEwiyxbrgq7KVAxX5lJUCHf9JBrMQ4dUDCBI&uact=5&oq=casa+verde+E+FLORA&gs_lp=Egxnd3Mtd2l6LXNlcnAiEmNhc2EgdmVyZGUgRSBGTE9SQTIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIFEAAY7wVIgBtQvQNYtxdwAngBkAEAmAG1AaABlwqqAQMwLjm4AQPIAQD4AQGYAgugAtkKwgIKEAAYRxjWBBiwA8ICDRAAGIAEGIoFGEMYsAPCAg4QABjkAhjWBBiwA9gBAcICExAuGEMYgAQYigUYyAMYsAPYAQHCAhMQLhiABBiKBRhDGMgDGLAD2AEBwgIFEAAYgATCAg4QLhivARjHARiABBiOBcICCxAuGK8BGMcBGIAEwgIKEAAYgAQYigUYQ8ICCxAuGIAEGMcBGK8BwgIKEAAYgAQYFBiHAsICCBAAGAgYHhgNmAMAiAYBkAYRugYGCAEQARgJkgcDMi45oAfjPbIHAzAuObgHyQrCBwcwLjEuOC4yyAcygAgB&sclient=gws-wiz-serp#sv=CAESzQEKuQEStgEKd0FKaVQ0dEk5MEZPU1c3OEFNUkNlRHVkVDJLbDZZY3VaOGZfcHFuYzlrRHQ4VFlvWWFDUVJPaDZVWTBVUG5tUVpNb1h5cmtrMzdxa09jME5BNzVXd3BuNTROeGVwVHdsaVFxcVNBRFJnZXE5b04xMzVCZUpvMHpREhcxSHRGYXJDWExPMzMxc1FQMDhQMWdBbxoiQURzcjlmUklxeWNaeU5pSmtIeVhpM3B2ei1jeE85c0dIdxIEODA1MRoBMyoAMAA4AUAAGAAgj7nz2AZKAhAC"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Avaliar no Google
+            </a>
+          </article>
+
+          <form id="review-form" class="newsletter-card">
+            <h3>Registrar avaliação</h3>
+            <input
+              id="review-name"
+              type="text"
+              placeholder="Seu nome"
+              required
+            />
+            <select id="review-rating" required>
+              <option value="">Nota</option>
+              <option value="5">5 estrelas</option>
+              <option value="4">4 estrelas</option>
+              <option value="3">3 estrelas</option>
+              <option value="2">2 estrelas</option>
+              <option value="1">1 estrela</option>
+            </select>
+            <input
+              id="review-text"
+              type="text"
+              placeholder="Conte como foi sua experiência"
+              required
+            />
+            <button class="btn secondary" type="submit">
+              Registrar e redirecionar
+            </button>
+            <p id="review-feedback" class="feedback"></p>
+          </form>
+        </div>
+        <div id="review-list" class="review-list"></div>
+      </section>
+
+      <section class="trust-section" id="confianca">
+        <h2>Compra segura e suporte real</h2>
+        <div class="trust-grid">
+          <article>
+            <h3>Atendimento humanizado</h3>
+            <p>Suporte por WhatsApp e e-mail em horário comercial.</p>
+          </article>
+          <article>
+            <h3>Políticas transparentes</h3>
+            <p>Privacidade, termos e trocas disponíveis no rodapé.</p>
+          </article>
+          <article>
+            <h3>Pagamento protegido</h3>
+            <p>Fluxo preparado para integração com gateways e webhook.</p>
+          </article>
+        </div>
+      </section>
     </main>
 
     <aside id="cart-drawer" class="cart-drawer" aria-hidden="true">
@@ -291,45 +434,47 @@
 
       <div id="cart-items" class="cart-items"></div>
 
-      <div class="coupon-row">
-        <input id="coupon-input" type="text" placeholder="Cupom" />
-        <button id="apply-coupon" type="button">Aplicar</button>
+      <div class="cart-footer">
+        <div class="coupon-row">
+          <input id="coupon-input" type="text" placeholder="Cupom" />
+          <button id="apply-coupon" type="button">Aplicar</button>
+        </div>
+        <p id="coupon-feedback" class="feedback"></p>
+
+        <div id="cart-summary" class="cart-summary"></div>
+
+        <form id="checkout-form" class="checkout-form">
+          <label for="checkout-name">Nome para entrega</label>
+          <input id="checkout-name" type="text" required />
+
+          <label for="checkout-mode">Modo de recebimento</label>
+          <select id="checkout-mode">
+            <option value="delivery">Entregar no endereço</option>
+            <option value="pickup">Retirar na loja</option>
+          </select>
+
+          <label for="checkout-cep">CEP</label>
+          <input id="checkout-cep" type="text" placeholder="00000-000" />
+
+          <label for="checkout-address">Endereço de entrega</label>
+          <input
+            id="checkout-address"
+            type="text"
+            placeholder="Rua, número, bairro"
+          />
+
+          <p id="shipping-feedback" class="feedback"></p>
+
+          <label for="checkout-payment">Pagamento</label>
+          <select id="checkout-payment">
+            <option>Pix</option>
+            <option>Cartão de crédito</option>
+            <option>Boleto</option>
+          </select>
+
+          <button class="btn primary" type="submit">Finalizar compra</button>
+        </form>
       </div>
-      <p id="coupon-feedback" class="feedback"></p>
-
-      <div id="cart-summary" class="cart-summary"></div>
-
-      <form id="checkout-form" class="checkout-form">
-        <label for="checkout-name">Nome para entrega</label>
-        <input id="checkout-name" type="text" required />
-
-        <label for="checkout-mode">Modo de recebimento</label>
-        <select id="checkout-mode">
-          <option value="delivery">Entregar no endereco</option>
-          <option value="pickup">Retirar na loja</option>
-        </select>
-
-        <label for="checkout-cep">CEP</label>
-        <input id="checkout-cep" type="text" placeholder="00000-000" />
-
-        <label for="checkout-address">Endereco de entrega</label>
-        <input
-          id="checkout-address"
-          type="text"
-          placeholder="Rua, numero, bairro"
-        />
-
-        <p id="shipping-feedback" class="feedback"></p>
-
-        <label for="checkout-payment">Pagamento</label>
-        <select id="checkout-payment">
-          <option>Pix</option>
-          <option>Cartao de credito</option>
-          <option>Boleto</option>
-        </select>
-
-        <button class="btn primary" type="submit">Finalizar compra</button>
-      </form>
     </aside>
 
     <div id="overlay" class="overlay"></div>
@@ -354,12 +499,21 @@
     <footer class="site-footer">
       <p>Casa Verde Pet e Flora | 2026</p>
       <p>
-        Experiencia inspirada em grandes e-commerces pet, com identidade
-        propria.
+        Experiência inspirada em grandes e-commerces pet, com identidade
+        própria.
+      </p>
+      <p class="footer-contact">
+        Contato: atendimento@casaverdepet.com.br | WhatsApp: (41) 00000-0000
+      </p>
+      <p class="footer-links">
+        <a href="privacidade.html">Política de privacidade</a>
+        <a href="#avaliacoes">Avaliações</a>
+        <a href="termos.html">Termos de uso</a>
+        <a href="trocas.html">Trocas e devoluções</a>
       </p>
       <p>
         <a
-          href="https://www.instagram.com/"
+          href="https://www.instagram.com/casaverdepeteflora?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
           target="_blank"
           rel="noopener noreferrer"
           class="footer-instagram"

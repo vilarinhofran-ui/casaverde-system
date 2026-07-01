@@ -1,0 +1,20 @@
+{
+  "name": "Casa Verde Pet e Flora",
+  "short_name": "Casa Verde",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#f5f6ef",
+  "theme_color": "#1f6b45",
+  "icons": [
+    {
+      "src": "logo-casaverde.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "logo-casaverde.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

@@ -14,11 +14,35 @@ const defaultProfile = {
 
 const defaultCustomers = [
   {
+    id: "cli_super_admin_demo",
+    name: "VTS Super Admin",
+    email: "vilarinhotechsolutionsvts@gmail.com",
+    phone: "",
+    role: "super_admin",
+    createdAt: new Date().toISOString(),
+    seedPassword: "Admin123.",
+    passwordSalt: "demo",
+    passwordHash: "demo",
+  },
+  {
+    id: "cli_admin_demo",
+    name: "Admin Loja",
+    email: "admin@casaverde.com",
+    phone: "",
+    role: "admin",
+    createdAt: new Date().toISOString(),
+    seedPassword: "123456",
+    passwordSalt: "demo",
+    passwordHash: "demo",
+  },
+  {
     id: "cli_demo",
     name: "Cliente Demo",
     email: "cliente@casaverde.com",
     phone: "",
+    role: "customer",
     createdAt: new Date().toISOString(),
+    seedPassword: "123456",
     passwordSalt: "demo",
     passwordHash: "demo",
   },
@@ -106,6 +130,13 @@ export function listCustomerAccounts() {
   return db.read(CUSTOMER_USERS_KEY, defaultCustomers);
 }
 
+export function findCustomerAccountByEmail(email) {
+  const normalized = normalizeText(email, 120).toLowerCase();
+  return (
+    listCustomerAccounts().find((user) => user.email === normalized) || null
+  );
+}
+
 export async function registerCustomerAccount(payload) {
   const name = normalizeText(payload?.name, 80);
   const email = normalizeText(payload?.email, 120).toLowerCase();
@@ -141,6 +172,7 @@ export async function registerCustomerAccount(payload) {
     name,
     email,
     phone,
+    role: "customer",
     createdAt: new Date().toISOString(),
     passwordSalt,
     passwordHash,
@@ -155,6 +187,7 @@ export async function registerCustomerAccount(payload) {
       name: next.name,
       email: next.email,
       phone: next.phone,
+      role: next.role,
       createdAt: next.createdAt,
     },
   };
@@ -171,7 +204,7 @@ export async function loginCustomerAccount(payload) {
   }
 
   if (match.passwordHash === "demo" && match.passwordSalt === "demo") {
-    if (password !== "123456") {
+    if (password !== String(match.seedPassword || "123456")) {
       return { ok: false, message: "Credenciais invalidas." };
     }
   } else {
@@ -185,6 +218,7 @@ export async function loginCustomerAccount(payload) {
     customerId: match.id,
     name: match.name,
     email: match.email,
+    role: match.role || "customer",
     loggedAt: new Date().toISOString(),
   };
 
@@ -193,8 +227,88 @@ export async function loginCustomerAccount(payload) {
   return { ok: true, session };
 }
 
+export function loginCustomerWithOAuth(payload) {
+  const email = normalizeText(payload?.email, 120).toLowerCase();
+  const name = normalizeText(payload?.name || "Cliente OAuth", 80);
+  const provider = normalizeText(
+    payload?.provider || "oauth",
+    32,
+  ).toLowerCase();
+
+  if (!email) {
+    return { ok: false, message: "OAuth sem e-mail confirmado." };
+  }
+
+  let account = findCustomerAccountByEmail(email);
+
+  if (!account) {
+    account = {
+      id: db.uid("cli"),
+      name,
+      email,
+      phone: "",
+      role: "customer",
+      authProvider: provider,
+      createdAt: new Date().toISOString(),
+      passwordSalt: "oauth",
+      passwordHash: "oauth",
+    };
+
+    db.update(CUSTOMER_USERS_KEY, defaultCustomers, (users) => [
+      account,
+      ...users,
+    ]);
+  } else if (account.authProvider !== provider) {
+    db.update(CUSTOMER_USERS_KEY, defaultCustomers, (users) =>
+      users.map((user) =>
+        user.email === email
+          ? {
+              ...user,
+              authProvider: provider,
+              name: user.name || name,
+            }
+          : user,
+      ),
+    );
+    account = {
+      ...account,
+      authProvider: provider,
+      name: account.name || name,
+    };
+  }
+
+  const session = {
+    customerId: account.id,
+    name: account.name || name,
+    email: account.email,
+    role: account.role || "customer",
+    authProvider: provider,
+    loggedAt: new Date().toISOString(),
+  };
+
+  db.write(CUSTOMER_SESSION_KEY, session);
+
+  return { ok: true, session, account };
+}
+
 export function getCustomerSession() {
-  return db.read(CUSTOMER_SESSION_KEY, null);
+  const session = db.read(CUSTOMER_SESSION_KEY, null);
+  if (!session) {
+    return null;
+  }
+
+  if (session.role) {
+    return session;
+  }
+
+  const account = listCustomerAccounts().find(
+    (user) => user.id === session.customerId || user.email === session.email,
+  );
+
+  return {
+    ...session,
+    role: account?.role || "customer",
+  };
 }
 
 export function logoutCustomerAccount() {
