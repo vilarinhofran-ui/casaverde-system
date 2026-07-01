@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Casa Verde - Admin</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" defer src="dashboard.js"></script>
+  </head>
+  <body>
+    <main class="section admin-wrap">
+      <h1>Painel Administrativo</h1>
+      <p id="admin-user"></p>
+      <p>Visao consolidada de operacao, pedidos e auditoria.</p>
+
+      <div id="admin-metrics" class="admin-metrics"></div>
+
+      <section class="admin-block">
+        <h2>Ultimos pedidos</h2>
+        <div id="orders-list"></div>
+      </section>
+
+      <section class="admin-block">
+        <h2>Midia de produtos (URL ou importacao)</h2>
+        <p class="erp-note">
+          Todas as alteracoes aqui sincronizam automaticamente na vitrine da
+          loja.
+        </p>
+        <div id="product-media-list"></div>
+      </section>
+
+      <section class="admin-block">
+        <h2>Auditoria recente</h2>
+        <div id="audit-list"></div>
+      </section>
+
+      <section class="admin-block">
+        <h2>Governanca de acessos</h2>
+        <p id="access-governance-hint" class="erp-note"></p>
+
+        <form id="access-request-form" class="erp-option-form">
+          <input
+            id="access-name"
+            type="text"
+            placeholder="Nome completo"
+            required
+          />
+          <input
+            id="access-email"
+            type="email"
+            placeholder="E-mail/login"
+            required
+          />
+          <input
+            id="access-password"
+            type="text"
+            placeholder="Senha inicial"
+            required
+          />
+          <select id="access-role" required>
+            <option value="caixa">Caixa</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button class="btn secondary" type="submit">
+            Solicitar novo acesso
+          </button>
+        </form>
+
+        <p id="access-request-feedback" class="erp-feedback"></p>
+      </section>
+
+      <section class="admin-block">
+        <h2>Aprovacoes pendentes</h2>
+        <div class="erp-table-wrap">
+          <table class="erp-options-table">
+            <thead>
+              <tr>
+                <th>Solicitante</th>
+                <th>Email/Login</th>
+                <th>Perfil</th>
+                <th>Aprovador necessario</th>
+                <th>Status</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="access-approvals-list"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-actions">
+        <button id="logout-btn" class="btn primary" type="button">Sair</button>
+        <a class="btn secondary" href="index.html">Ir para loja</a>
+        <a class="btn secondary" href="pdv.html">Abrir PDV</a>
+        <a class="btn secondary" href="erp.html">Abrir ERP Completo</a>
+      </section>
+    </main>
+  </body>
+</html>

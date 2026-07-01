@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Casa Verde - Login</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" defer src="login.js"></script>
+  </head>
+  <body>
+    <main class="section">
+      <h1>Login</h1>
+      <p>Acesso ao sistema interno Casa Verde.</p>
+
+      <form id="login-form" class="auth-card">
+        <label for="username">Usuário</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          autocomplete="username"
+          required
+        />
+
+        <label for="password">Senha</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        />
+
+        <button class="btn primary" type="submit">Entrar</button>
+        <div class="auth-divider"><span>ou</span></div>
+        <button id="google-admin-btn" class="btn google-btn" type="button">
+          Entrar com Google (Admin)
+        </button>
+        <p id="login-error" class="auth-error" aria-live="polite"></p>
+      </form>
+
+      <form id="code-form" class="auth-card code-card hidden">
+        <h2>Validacao por codigo</h2>
+        <p id="code-help" class="auth-tip">
+          Digite o codigo enviado para o e-mail do administrador.
+        </p>
+
+        <label for="admin-code">Codigo de autenticacao</label>
+        <input
+          id="admin-code"
+          name="admin-code"
+          type="text"
+          maxlength="6"
+          required
+        />
+
+        <button class="btn primary" type="submit">Validar codigo</button>
+        <button id="cancel-code-btn" class="btn secondary" type="button">
+          Cancelar
+        </button>
+        <p id="code-error" class="auth-error" aria-live="polite"></p>
+      </form>
+
+      <p class="auth-tip">
+        Super admin: vilarinhotechsolutionsvts@gmail.com | Senha: Admin123.
+      </p>
+      <p class="auth-tip">
+        Perfis demo: admin/supervisor/caixa | Senha: 123456
+      </p>
+      <p><a class="btn secondary" href="index.html">Voltar para o site</a></p>
+    </main>
+  </body>
+</html>

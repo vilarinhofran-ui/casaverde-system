@@ -1,0 +1,734 @@
+import {
+  filterProducts,
+  getProductById,
+  listCategories,
+  listProducts,
+  listSpecies,
+} from "./modules/products.js";
+import { logEvent } from "./modules/audit.js";
+import {
+  ORDER_STATUS_OPTIONS,
+  addToCart,
+  applyCoupon,
+  calculateTotals,
+  getActiveCoupon,
+  getCart,
+  listOrdersByCustomerId,
+  listSales,
+  placeOrder,
+  removeFromCart,
+  updateCartItem,
+} from "./modules/sales.js";
+import {
+  getCustomerSession,
+  getFavorites,
+  isFavorite,
+  loginCustomerAccount,
+  logoutCustomerAccount,
+  registerCustomerAccount,
+  toggleFavorite,
+} from "./modules/users.js";
+
+const currency = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+const state = {
+  filters: {
+    query: "",
+    species: "",
+    category: "",
+    sortBy: "relevance",
+    maxPrice: 350,
+    inStockOnly: false,
+    favoritesOnly: false,
+  },
+};
+
+const SAFE_MEDIA_PROTOCOLS = ["http:", "https:", "data:"];
+
+function el(id) {
+  return document.getElementById(id);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function isSafeMediaUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return false;
+  }
+
+  if (raw.startsWith("data:image/")) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    return SAFE_MEDIA_PROTOCOLS.includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function normalizeText(value, max = 160) {
+  return String(value || "")
+    .replace(/[<>]/g, "")
+    .trim()
+    .slice(0, max);
+}
+
+function stars(rating) {
+  if (rating >= 4.8) {
+    return "★★★★★";
+  }
+  if (rating >= 4.5) {
+    return "★★★★☆";
+  }
+  return "★★★☆☆";
+}
+
+function normalizeVideoUrl(url) {
+  const value = String(url || "").trim();
+  if (!value) {
+    return "";
+  }
+
+  if (!isSafeMediaUrl(value)) {
+    return "";
+  }
+
+  if (value.includes("youtube.com/watch?v=")) {
+    return value.replace("watch?v=", "embed/");
+  }
+
+  if (value.includes("youtu.be/")) {
+    const id = value.split("youtu.be/")[1];
+    return `https://www.youtube.com/embed/${id}`;
+  }
+
+  return value;
+}
+
+function productMediaMarkup(product) {
+  if (product.imageUrl && isSafeMediaUrl(product.imageUrl)) {
+    return `<img class="product-media" src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}" loading="lazy" />`;
+  }
+
+  if (product.videoUrl) {
+    const videoSrc = normalizeVideoUrl(product.videoUrl);
+    if (!videoSrc) {
+      return `<div class="product-icon">${escapeHtml(product.icon)}</div>`;
+    }
+
+    if (videoSrc.includes("youtube.com/embed")) {
+      return `<iframe class="product-media" src="${escapeHtml(videoSrc)}" title="Video do produto ${escapeHtml(product.name)}" loading="lazy" allowfullscreen></iframe>`;
+    }
+
+    return `<video class="product-media" src="${escapeHtml(videoSrc)}" controls preload="metadata"></video>`;
+  }
+
+  return `<div class="product-icon">${escapeHtml(product.icon)}</div>`;
+}
+
+function toProductCard(product) {
+  const favorite = isFavorite(product.id);
+
+  return `
+    <article class="product-card" data-product-id="${product.id}">
+      <p class="badge">${escapeHtml(product.badge)}</p>
+      ${productMediaMarkup(product)}
+      <h3>${escapeHtml(product.name)}</h3>
+      <p class="meta">${escapeHtml(product.species)} • ${escapeHtml(product.category)} • ${escapeHtml(product.brand)}</p>
+      <p class="rating">${stars(product.rating)} ${product.rating.toFixed(1)}</p>
+      <p class="old-price">de ${currency.format(product.oldPrice)}</p>
+      <p class="price">${currency.format(product.price)}</p>
+      <p class="delivery">Entrega em ate ${product.deliveryHours}h</p>
+      <div class="card-actions">
+        <button class="btn primary add-cart" data-product-id="${product.id}" type="button">Adicionar</button>
+        <button class="btn secondary fav-btn" data-product-id="${product.id}" type="button">
+          ${favorite ? "Favoritado" : "Favoritar"}
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderHighlights() {
+  const list = listProducts().slice(0, 3);
+  const container = el("highlights");
+
+  container.innerHTML = list
+    .map(
+      (item) => `
+      <article>
+        <p>${escapeHtml(item.badge)}</p>
+        <h3>${escapeHtml(item.icon)} ${escapeHtml(item.species)}</h3>
+        <p>${escapeHtml(item.name)}</p>
+      </article>
+    `,
+    )
+    .join("");
+}
+
+function getFilteredProducts() {
+  const products = filterProducts(state.filters);
+
+  if (!state.filters.favoritesOnly) {
+    return products;
+  }
+
+  const favorites = getFavorites();
+  return products.filter((product) => favorites.includes(product.id));
+}
+
+function renderProducts() {
+  const products = getFilteredProducts();
+  const grid = el("product-grid");
+  const count = el("results-count");
+
+  if (products.length === 0) {
+    grid.innerHTML = `<p class="empty-state">Nenhum produto encontrado para os filtros atuais.</p>`;
+    count.textContent = "0 resultados";
+    return;
+  }
+
+  grid.innerHTML = products.map(toProductCard).join("");
+  count.textContent = `${products.length} resultados encontrados`;
+}
+
+function cartWithProduct() {
+  return getCart()
+    .map((item) => {
+      const product = getProductById(item.productId);
+      if (!product) {
+        return null;
+      }
+      return { ...item, product };
+    })
+    .filter(Boolean);
+}
+
+function checkoutOptions() {
+  return {
+    deliveryMode: el("checkout-mode")?.value || "delivery",
+    cep: el("checkout-cep")?.value || "",
+  };
+}
+
+function updateHeaderCounters() {
+  const favoritesCount = getFavorites().length;
+  const cartCount = getCart().reduce((sum, item) => sum + item.quantity, 0);
+
+  el("favorites-count").textContent = String(favoritesCount);
+  el("cart-count").textContent = String(cartCount);
+}
+
+function renderShippingFeedback() {
+  const totals = calculateTotals(getCart(), getProductById, checkoutOptions());
+  const feedback = el("shipping-feedback");
+  const mode = checkoutOptions().deliveryMode;
+
+  if (mode === "pickup") {
+    feedback.textContent = "Retirada na loja selecionada: frete gratis.";
+    return totals;
+  }
+
+  feedback.textContent = `Frete estimado: ${currency.format(totals.shipping)}`;
+  return totals;
+}
+
+function renderCart() {
+  const items = cartWithProduct();
+  const itemsEl = el("cart-items");
+  const summaryEl = el("cart-summary");
+  const couponFeedback = el("coupon-feedback");
+  const coupon = getActiveCoupon();
+
+  if (coupon) {
+    couponFeedback.textContent = `Cupom ativo: ${coupon}`;
+  } else {
+    couponFeedback.textContent = "";
+  }
+
+  if (items.length === 0) {
+    itemsEl.innerHTML = `<p class="empty-state">Sua sacola esta vazia.</p>`;
+  } else {
+    itemsEl.innerHTML = items
+      .map(
+        (item) => `
+        <article class="cart-item">
+          <div>
+            <h4>${item.product.name}</h4>
+            <p>${currency.format(item.product.price)} cada</p>
+          </div>
+          <div class="qty-row">
+            <button class="qty-btn" data-action="decrease" data-product-id="${item.productId}" type="button">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" data-action="increase" data-product-id="${item.productId}" type="button">+</button>
+            <button class="remove-btn" data-action="remove" data-product-id="${item.productId}" type="button">Remover</button>
+          </div>
+        </article>
+      `,
+      )
+      .join("");
+  }
+
+  const totals = renderShippingFeedback();
+  summaryEl.innerHTML = `
+    <p>Itens: <strong>${totals.itemsCount}</strong></p>
+    <p>Subtotal: <strong>${currency.format(totals.subtotal)}</strong></p>
+    <p>Frete: <strong>${currency.format(totals.shipping)}</strong></p>
+    <p>Desconto: <strong>- ${currency.format(totals.discount)}</strong></p>
+    <p class="total">Total: <strong>${currency.format(totals.total)}</strong></p>
+  `;
+
+  updateHeaderCounters();
+}
+
+function populateFilterSelects() {
+  const speciesSelect = el("species-filter");
+  const categorySelect = el("category-filter");
+
+  speciesSelect.innerHTML =
+    `<option value="">Todas</option>` +
+    listSpecies()
+      .map((name) => `<option value="${name}">${name}</option>`)
+      .join("");
+
+  categorySelect.innerHTML =
+    `<option value="">Todas</option>` +
+    listCategories()
+      .map((name) => `<option value="${name}">${name}</option>`)
+      .join("");
+}
+
+function bindCatalogEvents() {
+  const grid = el("product-grid");
+  const searchForm = el("search-form");
+  const searchInput = el("search-input");
+  const speciesFilter = el("species-filter");
+  const categoryFilter = el("category-filter");
+  const sortFilter = el("sort-filter");
+  const priceFilter = el("price-filter");
+  const stockOnly = el("stock-only");
+  const favoritesOnly = el("favorites-only");
+  const clearFilters = el("clear-filters");
+
+  searchForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    state.filters.query = normalizeText(searchInput.value, 80);
+    searchInput.value = state.filters.query;
+    renderProducts();
+    logEvent("search", { query: state.filters.query });
+  });
+
+  speciesFilter.addEventListener("change", () => {
+    state.filters.species = speciesFilter.value;
+    renderProducts();
+  });
+
+  categoryFilter.addEventListener("change", () => {
+    state.filters.category = categoryFilter.value;
+    renderProducts();
+  });
+
+  sortFilter.addEventListener("change", () => {
+    state.filters.sortBy = sortFilter.value;
+    renderProducts();
+  });
+
+  priceFilter.addEventListener("input", () => {
+    state.filters.maxPrice = Number(priceFilter.value);
+    el("price-value").textContent = currency.format(state.filters.maxPrice);
+    renderProducts();
+  });
+
+  stockOnly.addEventListener("change", () => {
+    state.filters.inStockOnly = stockOnly.checked;
+    renderProducts();
+  });
+
+  favoritesOnly.addEventListener("change", () => {
+    state.filters.favoritesOnly = favoritesOnly.checked;
+    renderProducts();
+  });
+
+  clearFilters.addEventListener("click", () => {
+    state.filters = {
+      query: "",
+      species: "",
+      category: "",
+      sortBy: "relevance",
+      maxPrice: 350,
+      inStockOnly: false,
+      favoritesOnly: false,
+    };
+
+    searchInput.value = "";
+    speciesFilter.value = "";
+    categoryFilter.value = "";
+    sortFilter.value = "relevance";
+    priceFilter.value = "350";
+    stockOnly.checked = false;
+    favoritesOnly.checked = false;
+    el("price-value").textContent = currency.format(350);
+    renderProducts();
+  });
+
+  grid.addEventListener("click", (event) => {
+    const addButton = event.target.closest(".add-cart");
+    const favButton = event.target.closest(".fav-btn");
+
+    if (addButton) {
+      const productId = addButton.dataset.productId;
+      addToCart(productId, 1);
+      renderCart();
+      openCart();
+      logEvent("add_to_cart", { productId });
+      return;
+    }
+
+    if (favButton) {
+      const productId = favButton.dataset.productId;
+      toggleFavorite(productId);
+      updateHeaderCounters();
+      renderProducts();
+      logEvent("toggle_favorite", { productId });
+    }
+  });
+
+  document.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      state.filters.species = chip.dataset.species || "";
+      speciesFilter.value = state.filters.species;
+      renderProducts();
+      document
+        .getElementById("catalogo")
+        .scrollIntoView({ behavior: "smooth" });
+    });
+  });
+}
+
+function openCart() {
+  el("cart-drawer").classList.add("open");
+  el("overlay").classList.add("show");
+}
+
+function closeCart() {
+  el("cart-drawer").classList.remove("open");
+  el("overlay").classList.remove("show");
+}
+
+function bindCartEvents() {
+  el("cart-btn").addEventListener("click", openCart);
+  el("close-cart").addEventListener("click", closeCart);
+  el("overlay").addEventListener("click", closeCart);
+
+  el("cart-items").addEventListener("click", (event) => {
+    const actionButton = event.target.closest("button[data-action]");
+
+    if (!actionButton) {
+      return;
+    }
+
+    const { action, productId } = actionButton.dataset;
+    const currentItem = getCart().find((item) => item.productId === productId);
+
+    if (!currentItem) {
+      return;
+    }
+
+    if (action === "increase") {
+      updateCartItem(productId, currentItem.quantity + 1);
+    }
+
+    if (action === "decrease") {
+      updateCartItem(productId, currentItem.quantity - 1);
+    }
+
+    if (action === "remove") {
+      removeFromCart(productId);
+    }
+
+    renderCart();
+  });
+
+  el("apply-coupon").addEventListener("click", () => {
+    const code = normalizeText(el("coupon-input").value, 20).toUpperCase();
+    el("coupon-input").value = code;
+    const response = applyCoupon(code);
+    el("coupon-feedback").textContent = response.message;
+    renderCart();
+    logEvent("coupon", response);
+  });
+
+  ["checkout-mode", "checkout-cep", "checkout-address"].forEach((id) => {
+    const input = el(id);
+    input?.addEventListener("input", () => {
+      const mode = el("checkout-mode").value;
+      const addressInput = el("checkout-address");
+      if (mode === "pickup") {
+        addressInput.value = "";
+      }
+      renderCart();
+    });
+
+    input?.addEventListener("change", renderCart);
+  });
+
+  el("checkout-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const mode = el("checkout-mode").value;
+    const address = normalizeText(el("checkout-address").value, 180);
+    const session = getCustomerSession();
+    const cep = String(el("checkout-cep").value || "")
+      .replace(/\D/g, "")
+      .slice(0, 8);
+    const customerName = normalizeText(el("checkout-name").value, 80);
+
+    if (!customerName) {
+      el("coupon-feedback").textContent =
+        "Informe um nome valido para finalizar.";
+      return;
+    }
+
+    if (mode === "delivery" && cep.length < 8) {
+      el("coupon-feedback").textContent = "Informe um CEP valido para entrega.";
+      return;
+    }
+
+    const response = placeOrder(
+      {
+        customerId: session?.customerId || null,
+        customerName,
+        paymentMethod: el("checkout-payment").value,
+        deliveryMode: mode,
+        cep,
+        address: mode === "pickup" ? "Retirada na loja" : address,
+      },
+      getProductById,
+    );
+
+    if (!response.ok) {
+      el("coupon-feedback").textContent = response.message;
+      return;
+    }
+
+    const orderCode = response.order.id.toUpperCase();
+    el("coupon-feedback").textContent =
+      `Pedido ${orderCode} confirmado com sucesso.`;
+    el("checkout-form").reset();
+    renderCart();
+    renderCustomerSession();
+    logEvent("checkout", {
+      orderId: response.order.id,
+      total: response.order.totals.total,
+    });
+  });
+}
+
+function bindEngagementForms() {
+  el("newsletter-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const email = normalizeText(
+      el("newsletter-email").value,
+      120,
+    ).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      el("newsletter-feedback").textContent = "Informe um e-mail valido.";
+      return;
+    }
+    el("newsletter-feedback").textContent =
+      `Perfeito! ${email} foi cadastrado para receber novidades.`;
+    el("newsletter-form").reset();
+    logEvent("newsletter", { email });
+  });
+
+  el("tracking-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const code = normalizeText(el("tracking-code").value, 64).toLowerCase();
+    el("tracking-code").value = code.toUpperCase();
+    const order = listSales().find((item) => item.id.toLowerCase() === code);
+
+    if (!order) {
+      el("tracking-feedback").textContent =
+        "Pedido nao encontrado. Confira o codigo e tente novamente.";
+      return;
+    }
+
+    el("tracking-feedback").textContent =
+      `Pedido ${order.id.toUpperCase()} | Status: ${order.status} | Total: ${currency.format(order.totals.total)}`;
+  });
+}
+
+function renderCustomerOrders(customerId) {
+  const container = el("customer-orders");
+
+  if (!customerId) {
+    container.innerHTML =
+      '<p class="empty-state">Entre na conta para ver seus pedidos.</p>';
+    return;
+  }
+
+  const orders = listOrdersByCustomerId(customerId);
+
+  if (!orders.length) {
+    container.innerHTML =
+      '<p class="empty-state">Nenhum pedido vinculado a esta conta.</p>';
+    return;
+  }
+
+  const statusList = ORDER_STATUS_OPTIONS.join(", ");
+
+  container.innerHTML = orders
+    .slice(0, 8)
+    .map(
+      (order) => `
+      <article class="order-card">
+        <h4>${order.id.toUpperCase()}</h4>
+        <p>Status: ${order.status}</p>
+        <p>Entrega: ${order.deliveryMode === "pickup" ? "Retirada" : "Endereco"}</p>
+        <p>Total: ${currency.format(order.totals.total)}</p>
+        <p class="meta">Opcoes de status: ${statusList}</p>
+      </article>
+    `,
+    )
+    .join("");
+}
+
+function renderCustomerSession() {
+  const session = getCustomerSession();
+  const label = el("customer-session-label");
+
+  if (!session) {
+    label.textContent = "Entre para acompanhar seus pedidos automaticamente.";
+    el("checkout-name").value = "";
+    renderCustomerOrders(null);
+    return;
+  }
+
+  label.textContent = `Conta ativa: ${session.name} (${session.email})`;
+  el("checkout-name").value = session.name;
+  renderCustomerOrders(session.customerId);
+}
+
+function bindCustomerAccount() {
+  const registerForm = el("customer-register-form");
+  const loginForm = el("customer-login-form");
+  const feedback = el("customer-auth-feedback");
+
+  registerForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const response = await registerCustomerAccount({
+      name: normalizeText(el("register-name").value, 80),
+      email: normalizeText(el("register-email").value, 120),
+      phone: normalizeText(el("register-phone").value, 24),
+      password: String(el("register-password").value || "").trim(),
+    });
+
+    feedback.textContent = response.ok
+      ? "Conta criada com sucesso. Agora faca login para acompanhar pedidos."
+      : response.message;
+
+    if (response.ok) {
+      registerForm.reset();
+    }
+  });
+
+  loginForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const response = await loginCustomerAccount({
+      email: normalizeText(el("login-email").value, 120),
+      password: String(el("login-password").value || "").trim(),
+    });
+
+    feedback.textContent = response.ok
+      ? "Login realizado com sucesso."
+      : response.message;
+
+    if (response.ok) {
+      renderCustomerSession();
+      loginForm.reset();
+    }
+  });
+
+  el("customer-logout")?.addEventListener("click", () => {
+    logoutCustomerAccount();
+    feedback.textContent = "Sessao encerrada.";
+    renderCustomerSession();
+  });
+
+  el("customer-area-btn")?.addEventListener("click", () => {
+    document.getElementById("customer-account").scrollIntoView({
+      behavior: "smooth",
+    });
+  });
+}
+
+function bindShortcuts() {
+  el("favorites-btn").addEventListener("click", () => {
+    const favoritesOnly = el("favorites-only");
+    favoritesOnly.checked = !favoritesOnly.checked;
+    state.filters.favoritesOnly = favoritesOnly.checked;
+    renderProducts();
+    document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
+  });
+
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", (event) => {
+      const target = document.querySelector(anchor.getAttribute("href"));
+
+      if (!target) {
+        return;
+      }
+
+      event.preventDefault();
+      target.scrollIntoView({ behavior: "smooth" });
+    });
+  });
+
+  const backToTop = el("back-to-top");
+  if (backToTop) {
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 500) {
+        backToTop.classList.add("show");
+      } else {
+        backToTop.classList.remove("show");
+      }
+    });
+
+    backToTop.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+}
+
+function start() {
+  populateFilterSelects();
+  renderHighlights();
+  renderProducts();
+  renderCart();
+  renderCustomerSession();
+  updateHeaderCounters();
+
+  bindCatalogEvents();
+  bindCartEvents();
+  bindEngagementForms();
+  bindCustomerAccount();
+  bindShortcuts();
+}
+
+document.addEventListener("DOMContentLoaded", start);

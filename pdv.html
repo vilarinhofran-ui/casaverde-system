@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Casa Verde - PDV</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" defer src="pdv.js"></script>
+  </head>
+  <body class="pdv-body">
+    <header class="master-topbar">
+      <a class="brand" href="index.html">
+        <img
+          class="brand-logo"
+          src="logo-casaverde.jpg"
+          alt="Logo Casa Verde"
+        />
+        Casa Verde Admin
+      </a>
+
+      <nav class="master-nav" aria-label="Menu master">
+        <a href="erp.html"
+          ><span class="material-symbols-outlined">dashboard</span>Dashboard</a
+        >
+        <a href="erp.html" data-module-link="produtos"
+          ><span class="material-symbols-outlined">inventory_2</span>Produtos</a
+        >
+        <a href="erp.html" data-module-link="estoque"
+          ><span class="material-symbols-outlined">warehouse</span>Estoque</a
+        >
+        <a class="active" href="pdv.html"
+          ><span class="material-symbols-outlined">point_of_sale</span>PDV</a
+        >
+        <a href="erp.html" data-module-link="vendas"
+          ><span class="material-symbols-outlined">receipt_long</span>Vendas</a
+        >
+        <a href="erp.html" data-module-link="clientes"
+          ><span class="material-symbols-outlined">groups</span>Clientes</a
+        >
+        <a href="erp.html" data-module-link="relatorios"
+          ><span class="material-symbols-outlined">analytics</span>Relatorios</a
+        >
+        <a href="admin.html"
+          ><span class="material-symbols-outlined">manage_accounts</span
+          >Usuarios</a
+        >
+        <a href="erp.html" data-module-link="config"
+          ><span class="material-symbols-outlined">settings</span
+          >Configuracoes</a
+        >
+      </nav>
+
+      <div class="master-actions">
+        <button id="toggle-theme" class="btn secondary" type="button">
+          <span class="material-symbols-outlined">dark_mode</span>
+          Dark mode
+        </button>
+      </div>
+    </header>
+
+    <main class="pdv-shell">
+      <section class="pdv-hero">
+        <div>
+          <p class="erp-overline">PDV Omnichannel</p>
+          <h1>Caixa inteligente com pagamento validado</h1>
+          <p>
+            Fluxo completo para venda e entrada de estoque, com rastreabilidade
+            de status e movimentacoes.
+          </p>
+        </div>
+        <div class="pdv-status-pill">
+          <span id="sale-status-pill">PENDENTE</span>
+          <small
+            >Workflow obrigatorio: PENDENTE -> CONFIRMADO -> FINALIZADO</small
+          >
+        </div>
+      </section>
+
+      <section class="pdv-grid">
+        <article class="pdv-panel">
+          <h2>1) Operacao e bipagem</h2>
+
+          <div class="pdv-controls-row">
+            <label for="movement-mode">Modo de movimentacao</label>
+            <select id="movement-mode">
+              <option value="sale">Venda</option>
+              <option value="entry">Entrada de estoque</option>
+            </select>
+          </div>
+
+          <div class="pdv-controls-row">
+            <label for="barcode-input"
+              >Codigo de barras (scanner ou manual)</label
+            >
+            <div class="pdv-inline-input">
+              <input
+                id="barcode-input"
+                type="text"
+                placeholder="Bipe aqui e pressione Enter"
+              />
+              <button id="scan-button" class="btn primary" type="button">
+                Bipar
+              </button>
+            </div>
+          </div>
+
+          <div class="pdv-controls-row">
+            <label for="pdv-product">Selecao manual de produto</label>
+            <div class="pdv-inline-input">
+              <select id="pdv-product"></select>
+              <input
+                id="pdv-quantity"
+                type="number"
+                min="0.001"
+                step="0.001"
+                value="1"
+              />
+              <button id="add-manual-item" class="btn secondary" type="button">
+                Adicionar
+              </button>
+            </div>
+          </div>
+
+          <div class="pdv-controls-row">
+            <label for="pdv-customer">Cliente</label>
+            <input
+              id="pdv-customer"
+              type="text"
+              placeholder="Cliente do atendimento"
+            />
+          </div>
+
+          <div id="pdv-feedback" class="feedback"></div>
+        </article>
+
+        <article class="pdv-panel">
+          <h2>2) Pagamento presencial e online</h2>
+
+          <div class="pdv-controls-row">
+            <label for="pdv-payment">Metodo</label>
+            <select id="pdv-payment">
+              <optgroup label="Presencial">
+                <option value="dinheiro">Dinheiro</option>
+                <option value="cartao_debito">Cartao debito</option>
+                <option value="cartao_credito">Cartao credito</option>
+                <option value="pix_presencial">PIX presencial</option>
+              </optgroup>
+              <optgroup label="Online">
+                <option value="pix_qrcode">PIX QR Code</option>
+                <option value="link_pagamento">Link de pagamento</option>
+                <option value="gateway">Gateway (Stripe/Mercado Pago)</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="pdv-controls-row">
+            <label for="pdv-fiscal-doc">Emissao fiscal</label>
+            <select id="pdv-fiscal-doc">
+              <option value="NFE">Emitir NF-e</option>
+              <option value="NFCE">Emitir NFC-e</option>
+              <option value="RECEIPT">Emitir comprovante fiscal</option>
+              <option value="INTERNAL">Somente controle interno</option>
+            </select>
+          </div>
+
+          <div class="pdv-controls-row">
+            <label>Status da venda</label>
+            <div class="pdv-status-flow">
+              <button id="status-pending" class="btn secondary" type="button">
+                PENDENTE
+              </button>
+              <button
+                id="status-processing"
+                class="btn secondary"
+                type="button"
+              >
+                EM PROCESSAMENTO
+              </button>
+              <button id="status-confirm" class="btn secondary" type="button">
+                CONFIRMAR PAGAMENTO
+              </button>
+              <button id="status-cancel" class="btn secondary" type="button">
+                CANCELAR
+              </button>
+            </div>
+          </div>
+
+          <div class="pdv-controls-row">
+            <button
+              id="finalize-button"
+              class="btn primary pdv-big-action"
+              type="button"
+            >
+              Finalizar operacao
+            </button>
+            <small class="pdv-note"
+              >Regra critica: nenhuma venda e finalizada sem pagamento
+              confirmado.</small
+            >
+          </div>
+        </article>
+      </section>
+
+      <section class="pdv-cart-section pdv-panel">
+        <h2>3) Carrinho inteligente</h2>
+        <div id="pdv-cart-list" class="pdv-cart-list"></div>
+        <div class="pdv-totals">
+          <p>
+            <span>Subtotal itens:</span
+            ><strong id="totals-subtotal">R$ 0,00</strong>
+          </p>
+          <p>
+            <span>Total geral:</span><strong id="totals-total">R$ 0,00</strong>
+          </p>
+        </div>
+      </section>
+
+      <section class="pdv-grid">
+        <article class="pdv-panel">
+          <h2>4) Historico de vendas e entradas</h2>
+          <div class="erp-table-wrap">
+            <table class="erp-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Modo</th>
+                  <th>Status</th>
+                  <th>Pagamento</th>
+                  <th>Documento fiscal</th>
+                  <th>Total</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody id="movement-history"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="pdv-panel">
+          <h2>5) Estoque inteligente e trilha</h2>
+          <div class="erp-table-wrap">
+            <table class="erp-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Produto</th>
+                  <th>Movimento</th>
+                  <th>Qtd</th>
+                  <th>Un</th>
+                  <th>Saldo</th>
+                </tr>
+              </thead>
+              <tbody id="stock-history"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="pdv-panel">
+        <h2>6) Preparacao para integracoes futuras</h2>
+        <ul class="erp-list">
+          <li>
+            <span>API pagamentos</span
+            ><strong id="api-payment-status">Pronta para adapter</strong>
+          </li>
+          <li>
+            <span>API estoque</span
+            ><strong id="api-stock-status">Pronta para adapter</strong>
+          </li>
+          <li>
+            <span>API clientes</span
+            ><strong id="api-client-status">Pronta para adapter</strong>
+          </li>
+          <li>
+            <span>WhatsApp Business</span
+            ><strong id="api-whatsapp-status"
+              >Fila de notificacao pronta</strong
+            >
+          </li>
+          <li>
+            <span>Exportacao PDF/Excel</span
+            ><strong id="api-export-status">CSV pronto + hooks export</strong>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <div id="toast-host" class="toast-host" aria-live="polite"></div>
+  </body>
+</html>

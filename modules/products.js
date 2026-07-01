@@ -1,0 +1,380 @@
+import { db } from "../core/db.js";
+
+const PRODUCT_STOCK_DELTA_KEY = "casaverde_product_stock_delta";
+const PRODUCT_OVERRIDES_KEY = "casaverde_product_overrides";
+
+const BASE_PRODUCTS = [
+  {
+    id: "dog-ration-1",
+    barcode: "7891000000010",
+    name: "Racao Super Premium Adulto 15kg",
+    unit: "KG",
+    species: "Cachorro",
+    category: "Racao",
+    brand: "Casa Verde Select",
+    price: 259.9,
+    oldPrice: 289.9,
+    stock: 12,
+    badge: "Mais vendido",
+    rating: 4.8,
+    deliveryHours: 3,
+    icon: "🐶",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "dog-snack-1",
+    barcode: "7891000000027",
+    name: "Petisco Dental Sabor Carne",
+    unit: "UN",
+    species: "Cachorro",
+    category: "Petisco",
+    brand: "GoodBite",
+    price: 24.9,
+    oldPrice: 31.9,
+    stock: 40,
+    badge: "Oferta",
+    rating: 4.7,
+    deliveryHours: 2,
+    icon: "🦴",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "cat-ration-1",
+    barcode: "7891000000034",
+    name: "Racao Gato Castrado Salmao 10kg",
+    unit: "KG",
+    species: "Gato",
+    category: "Racao",
+    brand: "Felina Prime",
+    price: 219.9,
+    oldPrice: 249.9,
+    stock: 16,
+    badge: "Top gatos",
+    rating: 4.9,
+    deliveryHours: 4,
+    icon: "🐱",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "cat-litter-1",
+    barcode: "7891000000041",
+    name: "Areia Biodegradavel 4kg",
+    unit: "KG",
+    species: "Gato",
+    category: "Higiene",
+    brand: "EcoPaws",
+    price: 39.9,
+    oldPrice: 44.9,
+    stock: 28,
+    badge: "Sustentavel",
+    rating: 4.6,
+    deliveryHours: 6,
+    icon: "🧼",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "bird-feed-1",
+    barcode: "7891000000058",
+    name: "Mistura Premium para Passaros 1kg",
+    unit: "KG",
+    species: "Passaro",
+    category: "Racao",
+    brand: "Vida Aves",
+    price: 29.9,
+    oldPrice: 34.9,
+    stock: 18,
+    badge: "Nutricao",
+    rating: 4.5,
+    deliveryHours: 8,
+    icon: "🐦",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "fish-filter-1",
+    barcode: "7891000000065",
+    name: "Filtro Externo para Aquario 600L/h",
+    unit: "UN",
+    species: "Peixe",
+    category: "Acessorio",
+    brand: "AquaFlow",
+    price: 159.9,
+    oldPrice: 189.9,
+    stock: 10,
+    badge: "Tecnologia",
+    rating: 4.4,
+    deliveryHours: 12,
+    icon: "🐠",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "dog-toy-1",
+    barcode: "7891000000072",
+    name: "Brinquedo Mordedor Resistente",
+    unit: "UN",
+    species: "Cachorro",
+    category: "Brinquedo",
+    brand: "PlayPet",
+    price: 49.9,
+    oldPrice: 62.9,
+    stock: 22,
+    badge: "Duravel",
+    rating: 4.3,
+    deliveryHours: 5,
+    icon: "🎾",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "cat-scratcher-1",
+    barcode: "7891000000089",
+    name: "Arranhador Torre com Toca",
+    unit: "CX",
+    species: "Gato",
+    category: "Brinquedo",
+    brand: "Miau Design",
+    price: 189.9,
+    oldPrice: 229.9,
+    stock: 6,
+    badge: "Exclusivo",
+    rating: 4.8,
+    deliveryHours: 24,
+    icon: "🪵",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "farm-dog-1",
+    barcode: "7891000000096",
+    name: "Antipulgas Spot On 20 a 40kg",
+    unit: "UN",
+    species: "Cachorro",
+    category: "Farmacia",
+    brand: "VetCare",
+    price: 79.9,
+    oldPrice: 92.9,
+    stock: 14,
+    badge: "Cuidado",
+    rating: 4.7,
+    deliveryHours: 3,
+    icon: "💊",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "farm-cat-1",
+    barcode: "7891000000102",
+    name: "Vermifugo Gatos 4 comprimidos",
+    unit: "CX",
+    species: "Gato",
+    category: "Farmacia",
+    brand: "VetCare",
+    price: 34.9,
+    oldPrice: 39.9,
+    stock: 20,
+    badge: "Clinico",
+    rating: 4.5,
+    deliveryHours: 3,
+    icon: "💉",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "home-clean-1",
+    barcode: "7891000000119",
+    name: "Eliminador de Odores Pet 2L",
+    unit: "LT",
+    species: "Casa e Jardim",
+    category: "Limpeza",
+    brand: "GreenHome",
+    price: 54.9,
+    oldPrice: 69.9,
+    stock: 25,
+    badge: "Casa",
+    rating: 4.6,
+    deliveryHours: 8,
+    icon: "🏠",
+    imageUrl: "",
+    videoUrl: "",
+  },
+  {
+    id: "flower-1",
+    barcode: "7891000000126",
+    name: "Kit Jardim Pet Safe",
+    unit: "M",
+    species: "Casa e Jardim",
+    category: "Jardim",
+    brand: "Flora Viva",
+    price: 99.9,
+    oldPrice: 119.9,
+    stock: 9,
+    badge: "Novo",
+    rating: 4.4,
+    deliveryHours: 24,
+    icon: "🌿",
+    imageUrl: "",
+    videoUrl: "",
+  },
+];
+
+function readStockDelta() {
+  return db.read(PRODUCT_STOCK_DELTA_KEY, {});
+}
+
+function readOverrides() {
+  return db.read(PRODUCT_OVERRIDES_KEY, {});
+}
+
+function getEffectiveStockValue(product) {
+  const delta = readStockDelta();
+  const deltaValue = Number(delta[product.id] || 0);
+  return Math.max(0, Number(product.stock || 0) + deltaValue);
+}
+
+function withRuntimeData(product) {
+  const overrides = readOverrides();
+  const custom = overrides[product.id] || {};
+
+  return {
+    ...product,
+    ...custom,
+    stock: getEffectiveStockValue(product),
+  };
+}
+
+export function listProducts() {
+  return BASE_PRODUCTS.map((product) => withRuntimeData(product));
+}
+
+export function getProductById(id) {
+  const found = BASE_PRODUCTS.find((product) => product.id === id);
+  return found ? withRuntimeData(found) : null;
+}
+
+export function getProductByBarcode(barcode) {
+  const normalized = String(barcode || "").trim();
+  const found = BASE_PRODUCTS.find((product) => product.barcode === normalized);
+  return found ? withRuntimeData(found) : null;
+}
+
+export function updateProductMedia(productId, payload) {
+  return db.update(PRODUCT_OVERRIDES_KEY, {}, (current) => {
+    const previous = current[productId] || {};
+    const next = {
+      ...previous,
+      imageUrl: String(payload?.imageUrl || "").trim(),
+      videoUrl: String(payload?.videoUrl || "").trim(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    return {
+      ...current,
+      [productId]: next,
+    };
+  });
+}
+
+export function updateProductFields(productId, payload) {
+  return db.update(PRODUCT_OVERRIDES_KEY, {}, (current) => {
+    const previous = current[productId] || {};
+
+    const next = {
+      ...previous,
+      ...payload,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return {
+      ...current,
+      [productId]: next,
+    };
+  });
+}
+
+export function adjustProductStock(productId, amount) {
+  const safeAmount = Number(amount || 0);
+
+  return db.update(PRODUCT_STOCK_DELTA_KEY, {}, (current) => {
+    const product = BASE_PRODUCTS.find((item) => item.id === productId);
+    if (!product) {
+      return current;
+    }
+
+    const nextDelta = Number(current[productId] || 0) + safeAmount;
+    const nextStock = Math.max(0, Number(product.stock) + nextDelta);
+
+    return {
+      ...current,
+      [productId]: nextStock - Number(product.stock),
+    };
+  });
+}
+
+export function listSpecies() {
+  return [...new Set(listProducts().map((product) => product.species))];
+}
+
+export function listCategories() {
+  return [...new Set(listProducts().map((product) => product.category))];
+}
+
+function sortProducts(items, sortBy) {
+  const sorted = [...items];
+
+  if (sortBy === "price-asc") {
+    sorted.sort((a, b) => a.price - b.price);
+  }
+
+  if (sortBy === "price-desc") {
+    sorted.sort((a, b) => b.price - a.price);
+  }
+
+  if (sortBy === "rating") {
+    sorted.sort((a, b) => b.rating - a.rating);
+  }
+
+  if (sortBy === "delivery") {
+    sorted.sort((a, b) => a.deliveryHours - b.deliveryHours);
+  }
+
+  return sorted;
+}
+
+export function filterProducts(filters = {}) {
+  const {
+    query = "",
+    species = "",
+    category = "",
+    maxPrice = Number.POSITIVE_INFINITY,
+    inStockOnly = false,
+    sortBy = "relevance",
+  } = filters;
+
+  const normalizedQuery = String(query).trim().toLowerCase();
+
+  const filtered = listProducts().filter((product) => {
+    const matchesQuery =
+      normalizedQuery === "" ||
+      product.name.toLowerCase().includes(normalizedQuery) ||
+      product.brand.toLowerCase().includes(normalizedQuery);
+    const matchesSpecies = species === "" || product.species === species;
+    const matchesCategory = category === "" || product.category === category;
+    const matchesPrice = product.price <= Number(maxPrice || 0);
+    const matchesStock = !inStockOnly || product.stock > 0;
+
+    return (
+      matchesQuery &&
+      matchesSpecies &&
+      matchesCategory &&
+      matchesPrice &&
+      matchesStock
+    );
+  });
+
+  return sortProducts(filtered, sortBy);
+}

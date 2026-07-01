@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Casa Verde ERP</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" defer src="erp.js"></script>
+  </head>
+  <body class="erp-body">
+    <div class="erp-shell">
+      <aside class="erp-sidebar">
+        <a class="erp-brand" href="index.html">
+          <img
+            src="logo-casaverde.jpg"
+            alt="Logo Casa Verde"
+            class="brand-logo"
+          />
+          <span>Casa Verde ERP</span>
+        </a>
+
+        <nav id="erp-nav" class="erp-nav" aria-label="Modulos ERP"></nav>
+
+        <div class="erp-sidebar-footer">
+          <a class="btn secondary" href="admin.html">Voltar ao Admin</a>
+          <button id="erp-logout" class="btn primary" type="button">
+            Sair
+          </button>
+        </div>
+      </aside>
+
+      <main class="erp-main">
+        <header class="erp-topbar">
+          <div>
+            <p class="erp-overline">Sistema ERP Padronizado</p>
+            <h1 id="erp-title">Dashboard Executivo</h1>
+            <p id="erp-subtitle" class="erp-subtitle">
+              Visao geral financeira, operacional e comercial.
+            </p>
+          </div>
+
+          <div class="erp-top-actions">
+            <label for="erp-period">Periodo</label>
+            <select id="erp-period">
+              <option value="7">7 dias</option>
+              <option value="30" selected>30 dias</option>
+              <option value="90">90 dias</option>
+            </select>
+            <button id="erp-refresh" class="btn secondary" type="button">
+              Atualizar
+            </button>
+          </div>
+        </header>
+
+        <section id="erp-content" class="erp-content"></section>
+      </main>
+    </div>
+  </body>
+</html>

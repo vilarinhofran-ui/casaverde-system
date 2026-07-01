@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data: https:; media-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; frame-src https://www.youtube.com https://youtube.com; base-uri 'self'; form-action 'self'; object-src 'none'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta
+      http-equiv="Permissions-Policy"
+      content="camera=(), microphone=(), geolocation=(), payment=()"
+    />
+    <title>Casa Verde Pet e Flora - Loja Completa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Merriweather:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/jpeg" href="logo-casaverde.jpg" />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" defer src="script.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#catalogo">Pular para catalogo</a>
+
+    <div class="promo-bar">
+      Frete gratis acima de R$ 199 | Cupom de boas-vindas: CASAVERDE10 | Siga no
+      Instagram
+    </div>
+
+    <header class="site-header" id="inicio">
+      <a class="brand" href="#inicio">
+        <img
+          src="logo-casaverde.jpg"
+          alt="Logo Casa Verde"
+          class="brand-logo"
+        />
+        <span>Casa Verde Pet e Flora</span>
+      </a>
+
+      <form id="search-form" class="search-box" role="search">
+        <input
+          id="search-input"
+          type="search"
+          placeholder="Buscar racao, brinquedo, farmacia, marcas..."
+          aria-label="Buscar produtos"
+        />
+        <button type="submit">Buscar</button>
+      </form>
+
+      <div class="header-actions">
+        <button id="customer-area-btn" class="ghost-link" type="button">
+          Minha conta
+        </button>
+        <a href="admin.html" class="ghost-link">Admin</a>
+        <a href="erp.html" class="ghost-link">ERP</a>
+        <a href="pdv.html" class="ghost-link">PDV</a>
+        <a
+          href="https://www.instagram.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="instagram-link"
+          >Instagram</a
+        >
+        <button id="favorites-btn" class="icon-btn" type="button">
+          Favoritos
+          <span id="favorites-count">0</span>
+        </button>
+        <button id="cart-btn" class="icon-btn" type="button">
+          Sacola
+          <span id="cart-count">0</span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="departments" aria-label="Departamentos">
+      <button class="chip" data-species="">Todos</button>
+      <button class="chip" data-species="Cachorro">Cachorro</button>
+      <button class="chip" data-species="Gato">Gato</button>
+      <button class="chip" data-species="Passaro">Passaro</button>
+      <button class="chip" data-species="Peixe">Peixe</button>
+      <button class="chip" data-species="Casa e Jardim">Casa e Jardim</button>
+    </nav>
+
+    <nav class="quick-nav" aria-label="Atalhos da pagina">
+      <a href="#catalogo">Catalogo</a>
+      <a href="#servicos">Servicos</a>
+      <a href="#marcas">Marcas</a>
+      <a href="#customer-account">Minha conta</a>
+    </nav>
+
+    <main>
+      <section class="hero">
+        <div class="hero-text">
+          <p class="eyebrow">Loja pet com experiencia completa</p>
+          <h1>Tudo para o seu pet, da racao ao cuidado especializado</h1>
+          <p>
+            Catalogo por especie, entrega rapida, farmacia pet, assinatura,
+            favoritos e checkout inteligente.
+          </p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#catalogo">Explorar catalogo</a>
+            <a class="btn secondary" href="#servicos">Conhecer servicos</a>
+          </div>
+        </div>
+        <div class="hero-cards" id="highlights"></div>
+      </section>
+
+      <section class="benefits" id="beneficios">
+        <article>
+          <h3>Receba em horas</h3>
+          <p>Entrega no mesmo dia para itens selecionados.</p>
+        </article>
+        <article>
+          <h3>Frete gratis Brasil</h3>
+          <p>Compras acima de R$ 199 com envio gratis.</p>
+        </article>
+        <article>
+          <h3>Retire na loja</h3>
+          <p>Compre online e retire com praticidade.</p>
+        </article>
+        <article>
+          <h3>Parcelamento</h3>
+          <p>Pagamento em ate 3x sem juros.</p>
+        </article>
+      </section>
+
+      <section id="catalogo" class="catalog-layout">
+        <aside class="filters">
+          <h2>Filtros</h2>
+
+          <label for="species-filter">Especie</label>
+          <select id="species-filter"></select>
+
+          <label for="category-filter">Categoria</label>
+          <select id="category-filter"></select>
+
+          <label for="sort-filter">Ordenar por</label>
+          <select id="sort-filter">
+            <option value="relevance">Relevancia</option>
+            <option value="price-asc">Menor preco</option>
+            <option value="price-desc">Maior preco</option>
+            <option value="rating">Melhor avaliacao</option>
+            <option value="delivery">Entrega mais rapida</option>
+          </select>
+
+          <label for="price-filter"
+            >Preco maximo: <span id="price-value">R$ 350</span></label
+          >
+          <input
+            id="price-filter"
+            type="range"
+            min="20"
+            max="400"
+            step="10"
+            value="350"
+          />
+
+          <label class="inline-check">
+            <input id="stock-only" type="checkbox" />
+            Apenas itens em estoque
+          </label>
+
+          <label class="inline-check">
+            <input id="favorites-only" type="checkbox" />
+            Mostrar apenas favoritos
+          </label>
+
+          <button id="clear-filters" class="btn secondary" type="button">
+            Limpar filtros
+          </button>
+        </aside>
+
+        <section class="catalog-content">
+          <div class="catalog-head">
+            <h2>Produtos para todos os pets</h2>
+            <p id="results-count"></p>
+          </div>
+          <div id="product-grid" class="product-grid"></div>
+        </section>
+      </section>
+
+      <section id="servicos" class="services">
+        <h2>Servicos e cuidados essenciais</h2>
+        <div class="services-grid">
+          <article>
+            <h3>Banho e tosa</h3>
+            <p>Agendamento rapido com historico no perfil.</p>
+          </article>
+          <article>
+            <h3>Vet online</h3>
+            <p>Orientacao inicial para duvidas de saude.</p>
+          </article>
+          <article>
+            <h3>Assinatura inteligente</h3>
+            <p>Receba itens recorrentes com desconto.</p>
+          </article>
+          <article>
+            <h3>Clube de beneficios</h3>
+            <p>Cashback e ofertas personalizadas para tutores.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="brands" id="marcas">
+        <h2>Marcas favoritas</h2>
+        <div class="brand-list">
+          <span>PremierPet</span>
+          <span>Whisking</span>
+          <span>AquaLife</span>
+          <span>VetCare</span>
+          <span>GreenHome</span>
+          <span>PlayPet</span>
+        </div>
+      </section>
+
+      <section class="engagement">
+        <form id="newsletter-form" class="newsletter-card">
+          <h3>Receba ofertas e dicas semanais</h3>
+          <p>Cadastro gratuito para cupons e conteudos sobre bem-estar pet.</p>
+          <input
+            id="newsletter-email"
+            type="email"
+            placeholder="Seu melhor e-mail"
+            required
+          />
+          <button class="btn primary" type="submit">Quero receber</button>
+          <p id="newsletter-feedback" class="feedback"></p>
+        </form>
+
+        <form id="tracking-form" class="tracking-card">
+          <h3>Acompanhar pedido</h3>
+          <p>Digite o codigo gerado no checkout para ver o status.</p>
+          <input
+            id="tracking-code"
+            type="text"
+            placeholder="Ex: ORD_123"
+            required
+          />
+          <button class="btn secondary" type="submit">Consultar</button>
+          <p id="tracking-feedback" class="feedback"></p>
+        </form>
+
+        <section class="tracking-card customer-account" id="customer-account">
+          <h3>Conta do cliente</h3>
+          <p id="customer-session-label" class="feedback">
+            Entre para acompanhar seus pedidos automaticamente.
+          </p>
+
+          <form id="customer-register-form" class="checkout-form">
+            <label for="register-name">Criar conta</label>
+            <input id="register-name" type="text" placeholder="Nome completo" />
+            <input id="register-email" type="email" placeholder="E-mail" />
+            <input id="register-phone" type="text" placeholder="Telefone" />
+            <input
+              id="register-password"
+              type="password"
+              placeholder="Senha (minimo 6)"
+            />
+            <button class="btn secondary" type="submit">Cadastrar</button>
+          </form>
+
+          <form id="customer-login-form" class="checkout-form">
+            <label for="login-email">Entrar na conta</label>
+            <input id="login-email" type="email" placeholder="E-mail" />
+            <input id="login-password" type="password" placeholder="Senha" />
+            <button class="btn primary" type="submit">Entrar</button>
+            <button id="customer-logout" class="btn secondary" type="button">
+              Sair da conta
+            </button>
+          </form>
+
+          <p id="customer-auth-feedback" class="feedback"></p>
+
+          <div>
+            <h4>Pedidos da minha conta</h4>
+            <div id="customer-orders" class="cart-items"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <aside id="cart-drawer" class="cart-drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <h2>Sacola</h2>
+        <button id="close-cart" type="button">Fechar</button>
+      </div>
+
+      <div id="cart-items" class="cart-items"></div>
+
+      <div class="coupon-row">
+        <input id="coupon-input" type="text" placeholder="Cupom" />
+        <button id="apply-coupon" type="button">Aplicar</button>
+      </div>
+      <p id="coupon-feedback" class="feedback"></p>
+
+      <div id="cart-summary" class="cart-summary"></div>
+
+      <form id="checkout-form" class="checkout-form">
+        <label for="checkout-name">Nome para entrega</label>
+        <input id="checkout-name" type="text" required />
+
+        <label for="checkout-mode">Modo de recebimento</label>
+        <select id="checkout-mode">
+          <option value="delivery">Entregar no endereco</option>
+          <option value="pickup">Retirar na loja</option>
+        </select>
+
+        <label for="checkout-cep">CEP</label>
+        <input id="checkout-cep" type="text" placeholder="00000-000" />
+
+        <label for="checkout-address">Endereco de entrega</label>
+        <input
+          id="checkout-address"
+          type="text"
+          placeholder="Rua, numero, bairro"
+        />
+
+        <p id="shipping-feedback" class="feedback"></p>
+
+        <label for="checkout-payment">Pagamento</label>
+        <select id="checkout-payment">
+          <option>Pix</option>
+          <option>Cartao de credito</option>
+          <option>Boleto</option>
+        </select>
+
+        <button class="btn primary" type="submit">Finalizar compra</button>
+      </form>
+    </aside>
+
+    <div id="overlay" class="overlay"></div>
+
+    <a
+      class="whatsapp-float"
+      href="https://wa.me/554100000000"
+      target="_blank"
+      rel="noopener noreferrer"
+      >WhatsApp</a
+    >
+
+    <button
+      id="back-to-top"
+      class="back-to-top"
+      type="button"
+      aria-label="Voltar ao topo"
+    >
+      Topo
+    </button>
+
+    <footer class="site-footer">
+      <p>Casa Verde Pet e Flora | 2026</p>
+      <p>
+        Experiencia inspirada em grandes e-commerces pet, com identidade
+        propria.
+      </p>
+      <p>
+        <a
+          href="https://www.instagram.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="footer-instagram"
+          >Instagram oficial</a
+        >
+      </p>
+    </footer>
+  </body>
+</html>
