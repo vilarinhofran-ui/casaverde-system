@@ -1,3 +1,4 @@
+import { loginWithOAuthIdentity } from "./core/auth.js";
 import { clearPendingOAuth, readPendingOAuth } from "./core/oauth.js";
 import { loginCustomerWithOAuth } from "./modules/users.js";
 
@@ -11,8 +12,7 @@ function decodeJwtPayload(token) {
   try {
     const payload = token.split(".")[1];
     const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = atob(normalized);
-    return JSON.parse(decoded);
+    return JSON.parse(atob(normalized));
   } catch {
     return null;
   }
@@ -28,24 +28,34 @@ function getCallbackParams() {
   return {
     code: search.get("code") || hash.get("code"),
     idToken: search.get("id_token") || hash.get("id_token"),
-    accessToken: search.get("access_token") || hash.get("access_token"),
     error: search.get("error") || hash.get("error"),
-    state: search.get("state") || hash.get("state"),
   };
 }
 
-function setFlashAndRedirect(message, type = "info") {
+function setFlashAndRedirect(message, context = "customer") {
   sessionStorage.setItem(
     OAUTH_FLASH_KEY,
-    JSON.stringify({ message, type, createdAt: Date.now() }),
+    JSON.stringify({ message, createdAt: Date.now() }),
   );
-  window.location.href = "index.html#customer-account";
+  window.location.href =
+    context === "admin" ? "admin.html" : "index.html#customer-account";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+async function exchangeCode(provider, code) {
+  const response = await fetch("/api/oauth/exchange", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider, code }),
+  });
+  return response.json();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   const message = byId("oauth-callback-message");
   const pending = readPendingOAuth();
   const params = getCallbackParams();
+  const context = pending?.context || "customer";
+  const provider = pending?.provider || "oauth";
 
   if (params.error) {
     clearPendingOAuth();
@@ -56,35 +66,61 @@ document.addEventListener("DOMContentLoaded", () => {
   const identity = params.idToken ? decodeJwtPayload(params.idToken) : null;
 
   if (identity?.email) {
-    const provider = pending?.provider || "oauth";
-    const loginResult = loginCustomerWithOAuth({
-      email: identity.email,
-      name: identity.name || identity.given_name || "Cliente OAuth",
-      provider,
-    });
+    const result =
+      context === "admin"
+        ? loginWithOAuthIdentity(identity.email, provider)
+        : loginCustomerWithOAuth({
+            email: identity.email,
+            name: identity.name || identity.given_name || "Cliente OAuth",
+            provider,
+          });
 
     clearPendingOAuth();
 
-    if (!loginResult.ok) {
-      message.textContent = loginResult.message;
+    if (!result.ok) {
+      message.textContent = result.message;
       return;
     }
 
     setFlashAndRedirect(
-      `Acesso confirmado com ${provider === "google" ? "Google" : "Apple"} para ${identity.email}.`,
-      "success",
+      `Acesso confirmado com ${provider === "google" ? "Google" : "Apple"}.`,
+      context,
     );
     return;
   }
 
-  if (params.code) {
+  if (params.code && provider !== "oauth") {
+    const exchanged = await exchangeCode(provider, params.code);
     clearPendingOAuth();
-    message.textContent =
-      "Código OAuth recebido. Para conclusão real em produção, o backend precisa trocar o code por tokens seguros do provedor.";
+
+    if (!exchanged.ok || !exchanged.profile?.email) {
+      message.textContent =
+        exchanged.message || "Falha ao concluir a autenticação OAuth.";
+      return;
+    }
+
+    const result =
+      context === "admin"
+        ? loginWithOAuthIdentity(exchanged.profile.email, provider)
+        : loginCustomerWithOAuth({
+            email: exchanged.profile.email,
+            name: exchanged.profile.name || "Cliente OAuth",
+            provider,
+          });
+
+    if (!result.ok) {
+      message.textContent = result.message;
+      return;
+    }
+
+    setFlashAndRedirect(
+      `Acesso confirmado com ${provider === "google" ? "Google" : "Apple"}.`,
+      context,
+    );
     return;
   }
 
   clearPendingOAuth();
   message.textContent =
-    "Nenhum retorno OAuth utilizável foi encontrado. Revise o clientId e o redirect URI configurados.";
+    "Nenhum retorno OAuth utilizável foi encontrado. Revise as credenciais e o redirect URI.";
 });

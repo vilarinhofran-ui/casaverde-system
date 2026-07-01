@@ -334,6 +334,28 @@ export function login(username, password) {
   return { ok: true, session };
 }
 
+export function loginWithOAuthIdentity(email, provider = "oauth") {
+  const safeEmail = String(email || "")
+    .trim()
+    .toLowerCase();
+  const user = findUserByCredential(safeEmail);
+
+  if (!user) {
+    return { ok: false, message: "Conta OAuth sem permissão administrativa." };
+  }
+
+  if (!user.approved) {
+    return { ok: false, message: "Acesso pendente de aprovação." };
+  }
+
+  const session = setSessionFromUser(user, {
+    provider,
+    oauth: true,
+  });
+
+  return { ok: true, session };
+}
+
 export function logout() {
   localStorage.removeItem(SESSION_KEY);
 }

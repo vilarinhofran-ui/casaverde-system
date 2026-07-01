@@ -69,8 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
     navigateTo("admin.html");
   });
 
-  googleBtn?.addEventListener("click", () => {
-    const oauth = getOAuthLaunchResult("google", "admin");
+  googleBtn?.addEventListener("click", async () => {
+    const oauth = await getOAuthLaunchResult("google", "admin");
 
     if (oauth.ok) {
       window.location.href = oauth.authUrl;

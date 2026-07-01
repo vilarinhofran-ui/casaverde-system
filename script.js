@@ -28,7 +28,7 @@ import {
   registerCustomerAccount,
   toggleFavorite,
 } from "./modules/users.js";
-import { getOAuthLaunchResult } from "./core/oauth.js";
+import { getOAuthLaunchResult, loadPublicOAuthConfig } from "./core/oauth.js";
 
 const currency = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -287,14 +287,23 @@ function renderCart() {
       .map(
         (item) => `
         <article class="cart-item">
-          <div>
-            <h4>${item.product.name}</h4>
-            <p>${currency.format(item.product.price)} cada unidade</p>
+          <div class="cart-item-main">
+            <div class="cart-thumb-wrap">
+              ${item.product.imageUrl && isSafeMediaUrl(item.product.imageUrl) ? `<img class="cart-thumb" src="${escapeHtml(item.product.imageUrl)}" alt="${escapeHtml(item.product.name)}" />` : `<div class="cart-thumb cart-thumb-fallback">${escapeHtml(item.product.icon)}</div>`}
+            </div>
+            <div class="cart-item-copy">
+              <h4>${item.product.name}</h4>
+              <p>${currency.format(item.product.price)} cada unidade</p>
+              <p class="meta">Subtotal do item: ${currency.format(item.product.price * item.quantity)}</p>
+            </div>
           </div>
           <div class="qty-row">
-            <button class="qty-btn" data-action="decrease" data-product-id="${item.productId}" type="button">-</button>
-            <span>${item.quantity}</span>
-            <button class="qty-btn" data-action="increase" data-product-id="${item.productId}" type="button">+</button>
+            <div class="qty-group">
+              <button class="qty-btn" data-action="decrease" data-product-id="${item.productId}" type="button">-</button>
+              <span>${item.quantity}</span>
+              <button class="qty-btn" data-action="increase" data-product-id="${item.productId}" type="button">+</button>
+            </div>
+            <strong class="cart-line-total">${currency.format(item.product.price * item.quantity)}</strong>
             <button class="remove-btn" data-action="remove" data-product-id="${item.productId}" type="button">Remover</button>
           </div>
         </article>
@@ -620,10 +629,34 @@ function bindEngagementForms() {
   });
 }
 
-function renderReviews() {
+async function renderReviews() {
   const container = el("review-list");
   if (!container) {
     return;
+  }
+
+  try {
+    const response = await fetch("/api/google-reviews", { cache: "no-store" });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.ok && Array.isArray(data.reviews) && data.reviews.length) {
+        container.innerHTML = data.reviews
+          .map(
+            (review) => `
+            <article class="review-card">
+              <strong>${escapeHtml(review.author)}</strong>
+              <p class="rating">${"★".repeat(Number(review.rating || 0))}${"☆".repeat(5 - Number(review.rating || 0))}</p>
+              <p>${escapeHtml(review.text || "")}</p>
+              <p class="meta">${escapeHtml(review.relativeTime || "Google")}</p>
+            </article>
+          `,
+          )
+          .join("");
+        return;
+      }
+    }
+  } catch {
+    // Fallback local abaixo.
   }
 
   const reviews = listLocalReviews();
@@ -790,8 +823,8 @@ function bindCustomerAccount() {
     renderCustomerSession();
   });
 
-  el("customer-google-login")?.addEventListener("click", () => {
-    const result = getOAuthLaunchResult("google", "customer");
+  el("customer-google-login")?.addEventListener("click", async () => {
+    const result = await getOAuthLaunchResult("google", "customer");
     if (!result.ok) {
       feedback.textContent = result.message;
       return;
@@ -800,8 +833,8 @@ function bindCustomerAccount() {
     window.location.href = result.authUrl;
   });
 
-  el("customer-apple-login")?.addEventListener("click", () => {
-    const result = getOAuthLaunchResult("apple", "customer");
+  el("customer-apple-login")?.addEventListener("click", async () => {
+    const result = await getOAuthLaunchResult("apple", "customer");
     if (!result.ok) {
       feedback.textContent = result.message;
       return;
@@ -868,6 +901,7 @@ function bindShortcuts() {
 
 function start() {
   updateAdminLinksVisibility(getCustomerSession());
+  loadPublicOAuthConfig();
   populateFilterSelects();
   renderHighlights();
   renderProducts();

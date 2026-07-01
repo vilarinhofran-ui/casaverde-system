@@ -1,20 +1,21 @@
 const OAUTH_CALLBACK_PATH = "oauth-callback.html";
 const OAUTH_PENDING_KEY = "casaverde_oauth_pending";
+let cachedPublicConfig = null;
 
-export const OAUTH_CONFIG = {
+const fallbackConfig = {
   google: {
     clientId: "CONFIGURE_GOOGLE_CLIENT_ID",
     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
     scope: "openid email profile",
-    responseType: "id_token token",
-    responseMode: "fragment",
+    responseType: "code",
+    responseMode: "query",
   },
   apple: {
     clientId: "CONFIGURE_APPLE_CLIENT_ID",
     authUrl: "https://appleid.apple.com/auth/authorize",
     scope: "name email",
-    responseType: "code id_token",
-    responseMode: "fragment",
+    responseType: "code",
+    responseMode: "query",
   },
 };
 
@@ -44,6 +45,25 @@ function createNonce() {
   return Math.random().toString(36).slice(2, 14);
 }
 
+export async function loadPublicOAuthConfig() {
+  if (cachedPublicConfig) {
+    return cachedPublicConfig;
+  }
+
+  try {
+    const response = await fetch("/api/public-config", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("public-config unavailable");
+    }
+    const data = await response.json();
+    cachedPublicConfig = data;
+    return data;
+  } catch {
+    cachedPublicConfig = null;
+    return null;
+  }
+}
+
 export function readPendingOAuth() {
   try {
     return JSON.parse(sessionStorage.getItem(OAUTH_PENDING_KEY) || "null");
@@ -56,17 +76,32 @@ export function clearPendingOAuth() {
   sessionStorage.removeItem(OAUTH_PENDING_KEY);
 }
 
-export function getOAuthLaunchResult(provider, context = "customer") {
-  const config = OAUTH_CONFIG[provider];
+export async function getOAuthLaunchResult(provider, context = "customer") {
+  const publicConfig = await loadPublicOAuthConfig();
+  const merged = {
+    ...fallbackConfig,
+    google: {
+      ...fallbackConfig.google,
+      clientId:
+        publicConfig?.oauth?.googleClientId || fallbackConfig.google.clientId,
+    },
+    apple: {
+      ...fallbackConfig.apple,
+      clientId:
+        publicConfig?.oauth?.appleClientId || fallbackConfig.apple.clientId,
+    },
+  };
+
+  const config = merged[provider];
 
   if (!config) {
-    return { ok: false, message: "Provedor OAuth nao suportado." };
+    return { ok: false, message: "Provedor OAuth não suportado." };
   }
 
   if (!hasRealClientId(config.clientId)) {
     return {
       ok: false,
-      message: `Configure ${provider} em core/oauth.js com clientId e redirect URI oficial.`,
+      message: `Configure ${provider} no backend (.env) para liberar OAuth em produção.`,
     };
   }
 
