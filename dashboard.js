@@ -291,6 +291,16 @@ document.addEventListener("DOMContentLoaded", () => {
     renderGovernance(session);
   });
 
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-scroll-target]");
+    if (!button) {
+      return;
+    }
+
+    const target = byId(button.dataset.scrollTarget);
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   byId("orders-list")?.addEventListener("change", (event) => {
     const select = event.target.closest(".order-status-select");
     if (!select) {

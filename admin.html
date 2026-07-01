@@ -11,31 +11,92 @@
     <main class="section admin-wrap">
       <h1>Painel Administrativo</h1>
       <p id="admin-user"></p>
-      <p>Visao consolidada de operacao, pedidos e auditoria.</p>
+      <p>Visão consolidada de operação, pedidos e auditoria.</p>
+
+      <section class="admin-quick-hub">
+        <article class="admin-quick-card">
+          <p class="erp-overline">Atalho comercial</p>
+          <h2>Loja</h2>
+          <p>Visualize a vitrine, avaliações e jornada do cliente.</p>
+          <a class="btn secondary" href="index.html">Ir para loja</a>
+        </article>
+
+        <article class="admin-quick-card">
+          <p class="erp-overline">Operação rápida</p>
+          <h2>PDV</h2>
+          <p>Abra vendas presenciais, estoque e emissão fiscal do caixa.</p>
+          <a class="btn primary" href="pdv.html">Abrir PDV</a>
+        </article>
+
+        <article class="admin-quick-card">
+          <p class="erp-overline">Gestão total</p>
+          <h2>ERP Completo</h2>
+          <p>Acesse módulos de vendas, fiscal, CRM e relatórios.</p>
+          <a class="btn secondary" href="erp.html">Abrir ERP Completo</a>
+        </article>
+      </section>
+
+      <nav class="admin-section-nav" aria-label="Atalhos do painel">
+        <button
+          class="ghost-link"
+          type="button"
+          data-scroll-target="orders-section"
+        >
+          Pedidos
+        </button>
+        <button
+          class="ghost-link"
+          type="button"
+          data-scroll-target="media-section"
+        >
+          Mídia
+        </button>
+        <button
+          class="ghost-link"
+          type="button"
+          data-scroll-target="audit-section"
+        >
+          Auditoria
+        </button>
+        <button
+          class="ghost-link"
+          type="button"
+          data-scroll-target="access-section"
+        >
+          Acessos
+        </button>
+        <button
+          class="ghost-link"
+          type="button"
+          data-scroll-target="approvals-section"
+        >
+          Aprovações
+        </button>
+      </nav>
 
       <div id="admin-metrics" class="admin-metrics"></div>
 
-      <section class="admin-block">
-        <h2>Ultimos pedidos</h2>
+      <section id="orders-section" class="admin-block">
+        <h2>Últimos pedidos</h2>
         <div id="orders-list"></div>
       </section>
 
-      <section class="admin-block">
-        <h2>Midia de produtos (URL ou importacao)</h2>
+      <section id="media-section" class="admin-block">
+        <h2>Mídia de produtos (URL ou importação)</h2>
         <p class="erp-note">
-          Todas as alteracoes aqui sincronizam automaticamente na vitrine da
+          Todas as alterações aqui sincronizam automaticamente na vitrine da
           loja.
         </p>
         <div id="product-media-list"></div>
       </section>
 
-      <section class="admin-block">
+      <section id="audit-section" class="admin-block">
         <h2>Auditoria recente</h2>
         <div id="audit-list"></div>
       </section>
 
-      <section class="admin-block">
-        <h2>Governanca de acessos</h2>
+      <section id="access-section" class="admin-block">
+        <h2>Governança de acessos</h2>
         <p id="access-governance-hint" class="erp-note"></p>
 
         <form id="access-request-form" class="erp-option-form">
@@ -70,8 +131,8 @@
         <p id="access-request-feedback" class="erp-feedback"></p>
       </section>
 
-      <section class="admin-block">
-        <h2>Aprovacoes pendentes</h2>
+      <section id="approvals-section" class="admin-block">
+        <h2>Aprovações pendentes</h2>
         <div class="erp-table-wrap">
           <table class="erp-options-table">
             <thead>
