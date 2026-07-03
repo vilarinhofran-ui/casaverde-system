@@ -56,7 +56,8 @@ const state = {
 const SAFE_MEDIA_PROTOCOLS = ["http:", "https:", "data:"];
 const OAUTH_FLASH_KEY = "casaverde_oauth_flash";
 const REVIEWS_KEY = "casaverde_google_reviews_local";
-const searchSuggestionIndex = new Map();
+let predictiveSearchEntries = [];
+let predictiveSuggestion = "";
 const GOOGLE_REVIEW_URL =
   "https://www.google.com/search?q=casa+verde+E+FLORA&sca_esv=05ee508a17931f71&sxsrf=APpeQnt5XiVImOga6rlVUvu_nGYid4Tw-g%3A1782938568935&ei=yHtFarLBOPmp1sQP_5OZmAs&biw=1280&bih=551&ved=0ahUKEwiyxbrgq7KVAxX5lJUCHf9JBrMQ4dUDCBI&uact=5&oq=casa+verde+E+FLORA&gs_lp=Egxnd3Mtd2l6LXNlcnAiEmNhc2EgdmVyZGUgRSBGTE9SQTIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIFEAAY7wVIgBtQvQNYtxdwAngBkAEAmAG1AaABlwqqAQMwLjm4AQPIAQD4AQGYAgugAtkKwgIKEAAYRxjWBBiwA8ICDRAAGIAEGIoFGEMYsAPCAg4QABjkAhjWBBiwA9gBAcICExAuGEMYgAQYigUYyAMYsAPYAQHCAhMQLhiABBiKBRhDGMgDGLAD2AEBwgIFEAAYgATCAg4QLhivARjHARiABBiOBcICCxAuGK8BGMcBGIAEwgIKEAAYgAQYigUYQ8ICCxAuGIAEGMcBGK8BwgIKEAAYgAQYFBiHAsICCBAAGAgYHhgNmAMAiAYBkAYRugYGCAEQARgJkgcDMi45oAfjPbIHAzAuObgHyQrCBwcwLjEuOC4yyAcygAgB&sclient=gws-wiz-serp#sv=CAESzQEKuQEStgEKd0FKaVQ0dEk5MEZPU1c3OEFNUkNlRHVkVDJLbDZZY3VaOGZfcHFuYzlrRHQ4VFlvWWFDUVJPaDZVWTBVUG5tUVpNb1h5cmtrMzdxa09jME5BNzVXd3BuNTROeGVwVHdsaVFxcVNBRFJnZXE5b04xMzVCZUpvMHpREhcxSHRGYXJDWExPMzMxc1FQMDhQMWdBbxoiQURzcjlmUklxeWNaeU5pSmtIeVhpM3B2ei1jeE85c0dIdxIEODA1MRoBMyoAMAA4AUAAGAAgj7nz2AZKAhAC";
 
@@ -256,121 +257,88 @@ function listLocalReviews() {
   }
 }
 
-function buildStoreSearchSuggestions() {
-  searchSuggestionIndex.clear();
-
-  const suggestions = [];
+function refreshPredictiveEntries() {
+  const tokens = [];
   listProducts().forEach((product) => {
-    suggestions.push({
-      label: product.name,
-      type: "product",
-      query: product.name,
-    });
-
-    suggestions.push({
-      label: `Marca: ${product.brand}`,
-      type: "brand",
-      query: product.brand,
-    });
+    tokens.push(product.name, product.brand, product.category, product.species);
   });
 
-  listCategories().forEach((category) => {
-    suggestions.push({
-      label: `Categoria: ${category}`,
-      type: "category",
-      category,
-    });
-  });
-
-  listSpecies().forEach((species) => {
-    suggestions.push({
-      label: `Espécie: ${species}`,
-      type: "species",
-      species,
-    });
-  });
-
-  const unique = new Map();
-  suggestions.forEach((item) => {
-    if (!unique.has(item.label)) {
-      unique.set(item.label, item);
-    }
-  });
-
-  const suggestionValues = [...unique.values()];
-  suggestionValues.forEach((item) => {
-    searchSuggestionIndex.set(item.label.toLowerCase(), item);
-  });
-
-  renderSearchSuggestionBoard("");
+  predictiveSearchEntries = [
+    ...new Set(tokens.map((item) => normalizeText(item, 80)).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
-function renderSearchSuggestionBoard(value = "") {
-  const board = el("search-suggestion-board");
-  if (!board) {
+function computePredictiveSuggestion(value) {
+  const term = normalizeText(value, 80);
+  if (!term) {
+    return "";
+  }
+
+  const lower = term.toLowerCase();
+  const suggestion = predictiveSearchEntries.find(
+    (item) =>
+      item.toLowerCase().startsWith(lower) && item.toLowerCase() !== lower,
+  );
+
+  return suggestion || "";
+}
+
+function updatePredictiveGhost(inputValue) {
+  const ghost = el("search-predictive-ghost");
+  if (!ghost) {
     return;
   }
 
-  const term = normalizeText(value, 80).toLowerCase();
-  const allSuggestions = [...searchSuggestionIndex.values()];
-  const filtered = term
-    ? allSuggestions.filter((item) =>
-        [item.label, item.query, item.category, item.species]
-          .join(" ")
-          .toLowerCase()
-          .includes(term),
-      )
-    : allSuggestions;
+  const typed = normalizeText(inputValue, 80);
+  predictiveSuggestion = computePredictiveSuggestion(typed);
 
-  const limited = filtered.slice(0, 8);
-
-  if (!limited.length) {
-    board.innerHTML = "";
-    board.classList.add("hidden");
+  if (!typed || !predictiveSuggestion) {
+    ghost.textContent = "";
+    ghost.classList.remove("show");
     return;
   }
 
-  board.classList.remove("hidden");
-  board.innerHTML = limited
-    .map((item) => {
-      return `
-        <button class="search-suggestion-chip" type="button" data-suggestion-label="${escapeHtml(item.label)}">
-          ${escapeHtml(item.label)}
-        </button>
-      `;
-    })
-    .join("");
+  ghost.textContent = predictiveSuggestion;
+  ghost.classList.add("show");
+}
+
+function acceptPredictiveSuggestion() {
+  if (!predictiveSuggestion) {
+    return false;
+  }
+
+  const searchInput = el("search-input");
+  if (!searchInput) {
+    return false;
+  }
+
+  searchInput.value = predictiveSuggestion;
+  updatePredictiveGhost(predictiveSuggestion);
+  return true;
+}
+
+function applyInlineAutocomplete(searchInput, typedValue) {
+  const typed = normalizeText(typedValue, 80);
+  if (!typed) {
+    return;
+  }
+
+  const suggestion = computePredictiveSuggestion(typed);
+  if (!suggestion) {
+    return;
+  }
+
+  searchInput.value = suggestion;
+  searchInput.setSelectionRange(typed.length, suggestion.length);
 }
 
 function applyStoreSearch(value) {
   const normalized = normalizeText(value, 80);
-  const suggestion = searchSuggestionIndex.get(normalized.toLowerCase());
-
-  state.filters.query = "";
-  state.filters.category = "";
-  state.filters.species = "";
-
-  if (!suggestion) {
-    state.filters.query = normalized;
-  } else if (suggestion.type === "category") {
-    state.filters.category = suggestion.category;
-  } else if (suggestion.type === "species") {
-    state.filters.species = suggestion.species;
-  } else {
-    state.filters.query = suggestion.query;
-  }
+  state.filters.query = normalized;
 
   const searchInput = el("search-input");
   if (searchInput) {
     searchInput.value = normalized;
-  }
-  const speciesFilter = el("species-filter");
-  const categoryFilter = el("category-filter");
-  if (speciesFilter) {
-    speciesFilter.value = state.filters.species;
-  }
-  if (categoryFilter) {
-    categoryFilter.value = state.filters.category;
   }
 
   renderProducts();
@@ -567,7 +535,34 @@ function bindCatalogEvents() {
 
   searchInput.addEventListener("input", () => {
     const normalized = normalizeText(searchInput.value, 80);
-    renderSearchSuggestionBoard(normalized);
+    state.filters.query = normalized;
+    updatePredictiveGhost(normalized);
+    applyInlineAutocomplete(searchInput, normalized);
+    renderProducts();
+  });
+
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Tab" || event.key === "ArrowRight") {
+      const selectedText =
+        searchInput.selectionStart !== searchInput.selectionEnd;
+      if (!selectedText && predictiveSuggestion) {
+        event.preventDefault();
+        acceptPredictiveSuggestion();
+      }
+      return;
+    }
+
+    if (event.key === "Enter" && predictiveSuggestion) {
+      event.preventDefault();
+      acceptPredictiveSuggestion();
+      applyStoreSearch(searchInput.value);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      predictiveSuggestion = "";
+      updatePredictiveGhost("");
+    }
   });
 
   speciesFilter.addEventListener("change", () => {
@@ -620,7 +615,7 @@ function bindCatalogEvents() {
     stockOnly.checked = false;
     favoritesOnly.checked = false;
     el("price-value").textContent = currency.format(350);
-    renderSearchSuggestionBoard("");
+    updatePredictiveGhost("");
     renderProducts();
   });
 
@@ -649,17 +644,6 @@ function bindCatalogEvents() {
     }
   });
 
-  el("search-suggestion-board")?.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-suggestion-label]");
-    if (!button) {
-      return;
-    }
-
-    const label = button.dataset.suggestionLabel;
-    applyStoreSearch(label);
-    renderSearchSuggestionBoard(label);
-  });
-
   document.querySelectorAll(".chip").forEach((chip) => {
     chip.addEventListener("click", () => {
       state.filters.species = chip.dataset.species || "";
@@ -680,6 +664,26 @@ function openCart() {
 function closeCart() {
   el("cart-drawer").classList.remove("open");
   el("overlay").classList.remove("show");
+}
+
+function populateCartQuickAdd() {
+  const select = el("cart-add-product");
+  if (!select) {
+    return;
+  }
+
+  const currentValue = select.value;
+  const products = listProducts();
+  select.innerHTML = products
+    .map(
+      (product) =>
+        `<option value="${product.id}">${escapeHtml(product.name)} • ${currency.format(product.price)}</option>`,
+    )
+    .join("");
+
+  if (currentValue) {
+    select.value = currentValue;
+  }
 }
 
 function bindCartEvents() {
@@ -748,6 +752,32 @@ function bindCartEvents() {
     el("coupon-feedback").textContent = response.message;
     renderCart();
     logEvent("coupon", response);
+  });
+
+  el("cart-add-submit")?.addEventListener("click", () => {
+    const productId = String(el("cart-add-product")?.value || "");
+    const quantity = Math.max(1, Number(el("cart-add-qty")?.value || 1) || 1);
+
+    if (!productId) {
+      return;
+    }
+
+    addToCart(productId, quantity);
+    el("cart-add-qty").value = "1";
+    renderCart();
+  });
+
+  el("cart-add-qty")?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    el("cart-add-submit")?.click();
+  });
+
+  el("cart-back-store")?.addEventListener("click", () => {
+    closeCart();
+    document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" });
   });
 
   ["checkout-mode", "checkout-cep", "checkout-address"].forEach((id) => {
@@ -1223,12 +1253,13 @@ function bindShortcuts() {
 function start() {
   updateAdminLinksVisibility(getCustomerSession());
   loadPublicOAuthConfig();
-  buildStoreSearchSuggestions();
+  refreshPredictiveEntries();
   populateFilterSelects();
   renderHighlights();
   renderProducts();
   renderReviews();
   renderCart();
+  populateCartQuickAdd();
   renderCustomerSession();
   updateHeaderCounters();
 

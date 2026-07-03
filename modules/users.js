@@ -48,6 +48,55 @@ const defaultCustomers = [
   },
 ];
 
+function normalizeCredential(value) {
+  return normalizeText(value, 120).toLowerCase();
+}
+
+function synchronizeDefaultCustomers(existing = []) {
+  const users = Array.isArray(existing) ? [...existing] : [];
+
+  for (const seed of defaultCustomers) {
+    const seedEmail = normalizeCredential(seed.email);
+    const index = users.findIndex(
+      (user) =>
+        String(user?.id || "") === seed.id ||
+        normalizeCredential(user?.email) === seedEmail,
+    );
+
+    if (index < 0) {
+      users.push({ ...seed, createdAt: new Date().toISOString() });
+      continue;
+    }
+
+    users[index] = {
+      ...users[index],
+      id: seed.id,
+      name: seed.name,
+      email: seed.email,
+      role: seed.role,
+      seedPassword: seed.seedPassword,
+      passwordSalt: users[index].passwordSalt || seed.passwordSalt,
+      passwordHash: users[index].passwordHash || seed.passwordHash,
+      createdAt: users[index].createdAt || seed.createdAt,
+    };
+  }
+
+  return users;
+}
+
+function ensureCustomerAccounts() {
+  const existing = db.read(CUSTOMER_USERS_KEY, null);
+  if (Array.isArray(existing) && existing.length) {
+    const synced = synchronizeDefaultCustomers(existing);
+    db.write(CUSTOMER_USERS_KEY, synced);
+    return synced;
+  }
+
+  const seeded = synchronizeDefaultCustomers([]);
+  db.write(CUSTOMER_USERS_KEY, seeded);
+  return seeded;
+}
+
 function normalizeText(value, max = 160) {
   return String(value || "")
     .replace(/[<>]/g, "")
@@ -127,7 +176,7 @@ export function toggleFavorite(productId) {
 }
 
 export function listCustomerAccounts() {
-  return db.read(CUSTOMER_USERS_KEY, defaultCustomers);
+  return ensureCustomerAccounts();
 }
 
 export function findCustomerAccountByEmail(email) {
@@ -204,7 +253,16 @@ export async function loginCustomerAccount(payload) {
   }
 
   if (match.passwordHash === "demo" && match.passwordSalt === "demo") {
-    if (password !== String(match.seedPassword || "123456")) {
+    const seedPassword = String(match.seedPassword || "123456");
+    const isSuperAdminDemo =
+      normalizeCredential(match.email) ===
+      "vilarinhotechsolutionsvts@gmail.com";
+    const isLegacySuperAdminPassword =
+      isSuperAdminDemo &&
+      (password === "Admin123" || password === "Admin123.") &&
+      (seedPassword === "Admin123" || seedPassword === "Admin123.");
+
+    if (password !== seedPassword && !isLegacySuperAdminPassword) {
       return { ok: false, message: "Credenciais invalidas." };
     }
   } else {

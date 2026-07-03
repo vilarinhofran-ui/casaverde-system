@@ -159,12 +159,30 @@ select:focus-visible {
 }
 
 .search-box {
+  position: relative;
   display: flex;
   align-items: center;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 999px;
   overflow: hidden;
+}
+
+.search-predictive-ghost {
+  position: absolute;
+  left: 14px;
+  right: 96px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  color: #9aa7a0;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.search-predictive-ghost.show {
+  opacity: 1;
 }
 
 .search-box input,
@@ -175,8 +193,11 @@ select:focus-visible {
 }
 
 .search-box input {
+  position: relative;
+  z-index: 1;
   flex: 1;
   font-size: 0.96rem;
+  color: var(--ink);
 }
 
 .search-box input:focus {
@@ -188,28 +209,6 @@ select:focus-visible {
   background: var(--brand-1);
   color: #fff;
   font-weight: 700;
-}
-
-.search-suggestion-board {
-  margin-top: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.search-suggestion-chip {
-  border: 1px solid var(--line);
-  background: #ffffff;
-  border-radius: 999px;
-  padding: 7px 10px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.82rem;
-}
-
-.search-suggestion-chip:hover {
-  border-color: #b3c8bc;
-  background: #f8fcfa;
 }
 
 .header-actions {
@@ -775,6 +774,25 @@ main {
   gap: 10px;
   max-height: 54vh;
   overflow: auto;
+}
+
+.cart-quick-add {
+  display: grid;
+  gap: 8px;
+}
+
+.cart-quick-add-row {
+  display: grid;
+  grid-template-columns: 1fr 78px auto;
+  gap: 8px;
+}
+
+.cart-quick-add-row select,
+.cart-quick-add-row input,
+.cart-quick-add-row button {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
 }
 
 .qty-btn,

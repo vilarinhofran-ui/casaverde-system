@@ -294,6 +294,14 @@ function sortProducts(items, sortBy) {
   return sorted;
 }
 
+function normalizeSearchText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export function filterProducts(filters = {}) {
   const {
     query = "",
@@ -304,13 +312,23 @@ export function filterProducts(filters = {}) {
     sortBy = "relevance",
   } = filters;
 
-  const normalizedQuery = String(query).trim().toLowerCase();
+  const normalizedQuery = normalizeSearchText(query);
+  const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean);
 
   const filtered = listProducts().filter((product) => {
+    const searchableText = normalizeSearchText(
+      [
+        product.name,
+        product.brand,
+        product.category,
+        product.species,
+        product.badge,
+      ].join(" "),
+    );
+
     const matchesQuery =
       normalizedQuery === "" ||
-      product.name.toLowerCase().includes(normalizedQuery) ||
-      product.brand.toLowerCase().includes(normalizedQuery);
+      queryTerms.every((term) => searchableText.includes(term));
     const matchesSpecies = species === "" || product.species === species;
     const matchesCategory = category === "" || product.category === category;
     const matchesPrice = product.price <= Number(maxPrice || 0);
