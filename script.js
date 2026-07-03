@@ -1407,6 +1407,7 @@ function bindCustomerAccount() {
     if (response.ok) {
       renderCustomerSession();
       loginForm.reset();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   });
 
