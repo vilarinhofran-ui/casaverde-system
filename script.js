@@ -104,6 +104,60 @@ function normalizeText(value, max = 160) {
     .slice(0, max);
 }
 
+function normalizeCep(value) {
+  return String(value || "")
+    .replace(/\D/g, "")
+    .slice(0, 8);
+}
+
+function formatCep(value) {
+  const digits = normalizeCep(value);
+  if (digits.length <= 5) {
+    return digits;
+  }
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+async function lookupAddressByCep(cep) {
+  const digits = normalizeCep(cep);
+  if (digits.length !== 8) {
+    return { ok: false, message: "Informe um CEP com 8 digitos." };
+  }
+
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return { ok: false, message: "Nao foi possivel consultar o CEP." };
+    }
+
+    const data = await response.json();
+    if (data.erro) {
+      return { ok: false, message: "CEP nao encontrado." };
+    }
+
+    const addressLine = [
+      data.logradouro,
+      data.bairro,
+      `${data.localidade || ""} - ${data.uf || ""}`.trim(),
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return {
+      ok: true,
+      cep: digits,
+      addressLine,
+      city: data.localidade || "",
+      state: data.uf || "",
+    };
+  } catch {
+    return { ok: false, message: "Falha de rede ao consultar CEP." };
+  }
+}
+
 function stars(rating) {
   if (rating >= 4.8) {
     return "★★★★★";
@@ -476,7 +530,7 @@ function showProductAddedDialog() {
     if (dialog.open) {
       dialog.close();
     }
-  }, 1500);
+  }, 5000);
 }
 
 function bindProductAddedDialog() {
@@ -1173,7 +1227,12 @@ function renderCustomerSession() {
   const profileForm = el("customer-profile-form");
   const profileToggle = el("customer-profile-toggle");
   const profileName = el("profile-name");
+  const profileEmail = el("profile-email");
+  const profileCep = el("profile-cep");
+  const profileNumber = el("profile-number");
+  const profileComplement = el("profile-complement");
   const profilePhone = el("profile-phone");
+  const profileAddress = el("profile-address");
 
   updateAdminLinksVisibility(session);
   updateHeaderAccountActions(session);
@@ -1200,8 +1259,23 @@ function renderCustomerSession() {
   if (profileName) {
     profileName.value = account?.name || session.name || "";
   }
+  if (profileEmail) {
+    profileEmail.value = account?.email || session.email || "";
+  }
+  if (profileCep) {
+    profileCep.value = formatCep(account?.cep || "");
+  }
+  if (profileNumber) {
+    profileNumber.value = account?.number || "";
+  }
+  if (profileComplement) {
+    profileComplement.value = account?.complement || "";
+  }
   if (profilePhone) {
     profilePhone.value = account?.phone || "";
+  }
+  if (profileAddress) {
+    profileAddress.value = account?.addressLine || account?.address || "";
   }
   renderCustomerOrders(session.customerId);
 }
@@ -1283,6 +1357,8 @@ function bindCustomerAccount() {
   const profileForm = el("customer-profile-form");
   const profileToggle = el("customer-profile-toggle");
   const profileCancel = el("customer-profile-cancel");
+  const profileCep = el("profile-cep");
+  const profileAddress = el("profile-address");
 
   function setAuthMode(mode) {
     const isRegister = mode === "register";
@@ -1365,6 +1441,11 @@ function bindCustomerAccount() {
 
     const response = updateCustomerAccountProfile(session.customerId, {
       name: normalizeText(el("profile-name")?.value, 80),
+      email: normalizeText(el("profile-email")?.value, 120),
+      cep: normalizeCep(el("profile-cep")?.value),
+      number: normalizeText(el("profile-number")?.value, 16),
+      complement: normalizeText(el("profile-complement")?.value, 100),
+      addressLine: normalizeText(el("profile-address")?.value, 180),
       phone: normalizeText(el("profile-phone")?.value, 24),
     });
 
@@ -1381,6 +1462,23 @@ function bindCustomerAccount() {
       profileToggle.textContent = "Editar perfil";
     }
     renderCustomerSession();
+  });
+
+  profileCep?.addEventListener("blur", async () => {
+    const parsed = formatCep(profileCep.value);
+    profileCep.value = parsed;
+
+    const result = await lookupAddressByCep(parsed);
+    if (!result.ok) {
+      feedback.textContent = result.message;
+      return;
+    }
+
+    if (profileAddress) {
+      profileAddress.value = result.addressLine;
+    }
+    feedback.textContent =
+      "CEP localizado. Informe numero e complemento para concluir.";
   });
 
   el("customer-google-login")?.addEventListener("click", async () => {

@@ -402,6 +402,33 @@
               <form id="customer-profile-form" class="checkout-form hidden">
                 <label for="profile-name">Nome</label>
                 <input id="profile-name" type="text" placeholder="Seu nome" />
+                <label for="profile-email">E-mail</label>
+                <input
+                  id="profile-email"
+                  type="email"
+                  placeholder="seuemail@dominio.com"
+                />
+                <label for="profile-cep">CEP</label>
+                <input id="profile-cep" type="text" placeholder="00000-000" />
+                <label for="profile-address">Endereço (auto pelo CEP)</label>
+                <input
+                  id="profile-address"
+                  type="text"
+                  placeholder="Rua, bairro, cidade - UF"
+                  readonly
+                />
+                <label for="profile-number">Número</label>
+                <input
+                  id="profile-number"
+                  type="text"
+                  placeholder="Somente número"
+                />
+                <label for="profile-complement">Complemento</label>
+                <input
+                  id="profile-complement"
+                  type="text"
+                  placeholder="Apto, bloco, referência"
+                />
                 <label for="profile-phone">Telefone</label>
                 <input
                   id="profile-phone"
@@ -563,7 +590,7 @@
     <div id="overlay" class="overlay"></div>
 
     <dialog id="product-added-dialog" class="success-dialog" aria-live="polite">
-      <p id="product-added-message">Produto Adicionado com Sucesso</p>
+      <p id="product-added-message"></p>
       <button id="product-added-close" class="btn secondary" type="button">
         Fechar
       </button>

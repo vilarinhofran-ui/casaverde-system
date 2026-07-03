@@ -242,6 +242,18 @@ select:focus-visible {
   background: #eef8f2;
 }
 
+#customer-register-top-btn,
+#customer-login-top-btn {
+  color: #1f6b45;
+  border-color: #b9d8c6;
+  background: #e8f7ee;
+}
+
+#customer-register-top-btn:hover,
+#customer-login-top-btn:hover {
+  background: #dff2e7;
+}
+
 .instagram-link {
   border-radius: 999px;
   padding: 8px 12px;
@@ -2159,6 +2171,10 @@ iframe.product-media {
   gap: 12px;
   text-align: center;
   box-shadow: 0 16px 34px rgba(14, 39, 27, 0.24);
+}
+
+.success-dialog:not([open]) {
+  display: none;
 }
 
 .success-dialog::backdrop {

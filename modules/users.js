@@ -18,6 +18,11 @@ const defaultCustomers = [
     name: "VTS Super Admin",
     email: "vilarinhotechsolutionsvts@gmail.com",
     phone: "",
+    cep: "",
+    number: "",
+    complement: "",
+    addressLine: "",
+    address: "",
     role: "super_admin",
     createdAt: new Date().toISOString(),
     seedPassword: "Admin123.",
@@ -29,6 +34,11 @@ const defaultCustomers = [
     name: "Admin Loja",
     email: "admin@casaverde.com",
     phone: "",
+    cep: "",
+    number: "",
+    complement: "",
+    addressLine: "",
+    address: "",
     role: "admin",
     createdAt: new Date().toISOString(),
     seedPassword: "123456",
@@ -40,6 +50,11 @@ const defaultCustomers = [
     name: "Cliente Demo",
     email: "cliente@casaverde.com",
     phone: "",
+    cep: "",
+    number: "",
+    complement: "",
+    addressLine: "",
+    address: "",
     role: "customer",
     createdAt: new Date().toISOString(),
     seedPassword: "123456",
@@ -74,6 +89,11 @@ function synchronizeDefaultCustomers(existing = []) {
       name: seed.name,
       email: seed.email,
       role: seed.role,
+      cep: users[index].cep || seed.cep,
+      number: users[index].number || seed.number,
+      complement: users[index].complement || seed.complement,
+      addressLine: users[index].addressLine || seed.addressLine,
+      address: users[index].address || seed.address,
       seedPassword: seed.seedPassword,
       passwordSalt: users[index].passwordSalt || seed.passwordSalt,
       passwordHash: users[index].passwordHash || seed.passwordHash,
@@ -221,6 +241,11 @@ export async function registerCustomerAccount(payload) {
     name,
     email,
     phone,
+    cep: "",
+    number: "",
+    complement: "",
+    addressLine: "",
+    address: "",
     role: "customer",
     createdAt: new Date().toISOString(),
     passwordSalt,
@@ -236,6 +261,11 @@ export async function registerCustomerAccount(payload) {
       name: next.name,
       email: next.email,
       phone: next.phone,
+      cep: next.cep,
+      number: next.number,
+      complement: next.complement,
+      addressLine: next.addressLine,
+      address: next.address,
       role: next.role,
       createdAt: next.createdAt,
     },
@@ -376,10 +406,57 @@ export function updateCustomerAccountProfile(customerId, changes = {}) {
   }
 
   const nextName = normalizeText(changes?.name, 80);
+  const nextEmail = normalizeText(changes?.email, 120).toLowerCase();
   const nextPhone = normalizeText(changes?.phone, 24);
+  const nextCep = String(changes?.cep || "")
+    .replace(/\D/g, "")
+    .slice(0, 8);
+  const nextNumber = normalizeText(changes?.number, 16);
+  const nextComplement = normalizeText(changes?.complement, 100);
+  const nextAddressLine = normalizeText(changes?.addressLine, 180);
+  const nextAddress = normalizeText(
+    [
+      nextAddressLine,
+      nextNumber ? `N ${nextNumber}` : "",
+      nextComplement ? `Compl. ${nextComplement}` : "",
+    ]
+      .filter(Boolean)
+      .join(" | "),
+    220,
+  );
 
   if (!nextName) {
     return { ok: false, message: "Informe um nome valido." };
+  }
+
+  if (!nextEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
+    return { ok: false, message: "Informe um e-mail valido." };
+  }
+
+  const users = listCustomerAccounts();
+  const emailInUse = users.some(
+    (user) => user.id !== safeCustomerId && user.email === nextEmail,
+  );
+  if (emailInUse) {
+    return {
+      ok: false,
+      message: "Este e-mail já está em uso por outra conta.",
+    };
+  }
+
+  if (nextCep.length !== 8) {
+    return { ok: false, message: "Informe um CEP valido com 8 digitos." };
+  }
+
+  if (!nextAddressLine) {
+    return { ok: false, message: "Preencha o CEP para carregar o endereco." };
+  }
+
+  if (!nextNumber) {
+    return {
+      ok: false,
+      message: "Informe o numero do endereco para salvar o perfil.",
+    };
   }
 
   let updatedAccount = null;
@@ -393,7 +470,13 @@ export function updateCustomerAccountProfile(customerId, changes = {}) {
       updatedAccount = {
         ...user,
         name: nextName,
+        email: nextEmail,
         phone: nextPhone,
+        cep: nextCep,
+        number: nextNumber,
+        complement: nextComplement,
+        addressLine: nextAddressLine,
+        address: nextAddress,
         updatedAt: new Date().toISOString(),
       };
 
@@ -410,6 +493,7 @@ export function updateCustomerAccountProfile(customerId, changes = {}) {
     db.write(CUSTOMER_SESSION_KEY, {
       ...currentSession,
       name: updatedAccount.name,
+      email: updatedAccount.email,
     });
   }
 
@@ -420,6 +504,11 @@ export function updateCustomerAccountProfile(customerId, changes = {}) {
       name: updatedAccount.name,
       email: updatedAccount.email,
       phone: updatedAccount.phone,
+      cep: updatedAccount.cep || "",
+      number: updatedAccount.number || "",
+      complement: updatedAccount.complement || "",
+      addressLine: updatedAccount.addressLine || "",
+      address: updatedAccount.address || "",
       role: updatedAccount.role || "customer",
     },
   };

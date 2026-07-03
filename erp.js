@@ -33,6 +33,7 @@ const DEFAULT_ERP_OPTIONS = [
   { key: "financeiro", label: "Financeiro", category: "Financeiro" },
   { key: "estoque", label: "Estoque", category: "Operacao" },
   { key: "clientes", label: "CRM", category: "Comercial" },
+  { key: "bling", label: "VTS VISION", category: "Gestao" },
   { key: "fiscal", label: "Fiscal", category: "Fiscal" },
   { key: "compras", label: "Compras", category: "Suprimentos" },
   { key: "relatorios", label: "Relatorios", category: "Gestao" },
@@ -69,6 +70,11 @@ const viewMeta = {
   clientes: {
     title: "CRM",
     subtitle: "Clientes ativos, recorrencia e oportunidades.",
+  },
+  bling: {
+    title: "VTS VISION",
+    subtitle:
+      "Desenvolvimento especializado com mapa completo de funcoes operacionais e de gestao.",
   },
   fiscal: {
     title: "Fiscal",
@@ -235,6 +241,276 @@ const MODULE_SCHEMAS = {
     },
   },
 };
+
+const BLING_FUNCTIONS = [
+  {
+    area: "Cadastros",
+    items: [
+      "Produtos e variacoes",
+      "Clientes e contatos",
+      "Fornecedores",
+      "Servicos",
+      "Categorias e colecoes",
+      "Tabelas de preco",
+    ],
+  },
+  {
+    area: "Vendas",
+    items: [
+      "Pedidos de venda",
+      "Orcamentos e propostas",
+      "Checkout e recebimentos",
+      "Separacao e expedicao",
+      "Comissoes por vendedor",
+      "Pos-venda e trocas",
+    ],
+  },
+  {
+    area: "Estoque",
+    items: [
+      "Saldo por deposito",
+      "Movimentacoes e ajustes",
+      "Inventario",
+      "Reserva de estoque",
+      "Lote e validade",
+      "Custo medio",
+    ],
+  },
+  {
+    area: "Compras",
+    items: [
+      "Solicitacoes de compra",
+      "Cotacoes",
+      "Pedido de compra",
+      "Entrada de mercadoria",
+      "Controle de fornecedores",
+      "Reposicao automatizada",
+    ],
+  },
+  {
+    area: "Financeiro",
+    items: [
+      "Contas a pagar",
+      "Contas a receber",
+      "Fluxo de caixa",
+      "Conciliacao",
+      "Boletos e cobrancas",
+      "Centros de custo",
+    ],
+  },
+  {
+    area: "Fiscal",
+    items: [
+      "NFe/NFCe",
+      "CFOP e natureza de operacao",
+      "Tributos e regras fiscais",
+      "Manifestacao e cancelamento",
+      "Carta de correcao",
+      "Relatorios fiscais",
+    ],
+  },
+  {
+    area: "Logistica",
+    items: [
+      "Etiquetas de envio",
+      "Rastreio de pedidos",
+      "Tabela de frete",
+      "Romaneio",
+      "Conferencia de expedicao",
+      "Ocorrencias de transporte",
+    ],
+  },
+  {
+    area: "Marketplace e Integracoes",
+    items: [
+      "Sincronizacao de catalogo",
+      "Importacao de pedidos",
+      "Atualizacao de preco e estoque",
+      "Hub de canais",
+      "API e webhooks",
+      "Logs de integracao",
+    ],
+  },
+  {
+    area: "Relatorios",
+    items: [
+      "DRE gerencial",
+      "Curva ABC",
+      "Margem por produto",
+      "Vendas por periodo",
+      "Metas e desempenho",
+      "Exportacao CSV/Excel",
+    ],
+  },
+  {
+    area: "Sistema",
+    items: [
+      "Usuarios e perfis",
+      "Permissoes",
+      "Automacoes",
+      "Auditoria",
+      "Painel de alertas",
+      "Parametros gerais",
+    ],
+  },
+];
+
+const REQUIRED_BLING_FUNCTIONS = [
+  {
+    area: "Cadastros",
+    items: [
+      "Produtos e variacoes",
+      "Clientes e contatos",
+      "Fornecedores",
+      "Servicos",
+      "Categorias e colecoes",
+      "Tabelas de preco",
+    ],
+  },
+  {
+    area: "Vendas",
+    items: [
+      "Pedidos de venda",
+      "Orcamentos e propostas",
+      "Checkout e recebimentos",
+      "Separacao e expedicao",
+      "Comissoes por vendedor",
+      "Pos-venda e trocas",
+    ],
+  },
+  {
+    area: "Estoque",
+    items: [
+      "Saldo por deposito",
+      "Movimentacoes e ajustes",
+      "Inventario",
+      "Reserva de estoque",
+      "Lote e validade",
+      "Custo medio",
+    ],
+  },
+  {
+    area: "Compras",
+    items: [
+      "Solicitacoes de compra",
+      "Cotacoes",
+      "Pedido de compra",
+      "Entrada de mercadoria",
+      "Controle de fornecedores",
+      "Reposicao automatizada",
+    ],
+  },
+  {
+    area: "Financeiro",
+    items: [
+      "Contas a pagar",
+      "Contas a receber",
+      "Fluxo de caixa",
+      "Conciliacao",
+      "Boletos e cobrancas",
+      "Centros de custo",
+    ],
+  },
+  {
+    area: "Fiscal",
+    items: [
+      "NFe/NFCe",
+      "CFOP e natureza de operacao",
+      "Tributos e regras fiscais",
+      "Manifestacao e cancelamento",
+      "Carta de correcao",
+      "Relatorios fiscais",
+    ],
+  },
+  {
+    area: "Logistica",
+    items: [
+      "Etiquetas de envio",
+      "Rastreio de pedidos",
+      "Tabela de frete",
+      "Romaneio",
+      "Conferencia de expedicao",
+      "Ocorrencias de transporte",
+    ],
+  },
+  {
+    area: "Marketplace e Integracoes",
+    items: [
+      "Sincronizacao de catalogo",
+      "Importacao de pedidos",
+      "Atualizacao de preco e estoque",
+      "Hub de canais",
+      "API e webhooks",
+      "Logs de integracao",
+    ],
+  },
+  {
+    area: "Relatorios",
+    items: [
+      "DRE gerencial",
+      "Curva ABC",
+      "Margem por produto",
+      "Vendas por periodo",
+      "Metas e desempenho",
+      "Exportacao CSV/Excel",
+    ],
+  },
+  {
+    area: "Sistema",
+    items: [
+      "Usuarios e perfis",
+      "Permissoes",
+      "Automacoes",
+      "Auditoria",
+      "Painel de alertas",
+      "Parametros gerais",
+    ],
+  },
+];
+
+function normalizeFunctionToken(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function resolveBlingFunctions() {
+  const currentMap = new Map();
+
+  BLING_FUNCTIONS.forEach((group) => {
+    const key = group.area;
+    const items = Array.isArray(group.items) ? [...group.items] : [];
+    currentMap.set(key, items);
+  });
+
+  let missingCount = 0;
+
+  const merged = REQUIRED_BLING_FUNCTIONS.map((required) => {
+    const existing = currentMap.get(required.area) || [];
+    const existingTokens = new Set(existing.map(normalizeFunctionToken));
+    const finalItems = [...existing];
+
+    required.items.forEach((item) => {
+      const token = normalizeFunctionToken(item);
+      if (existingTokens.has(token)) {
+        return;
+      }
+
+      finalItems.push(item);
+      existingTokens.add(token);
+      missingCount += 1;
+    });
+
+    return {
+      area: required.area,
+      items: finalItems,
+    };
+  });
+
+  return { groups: merged, missingCount };
+}
 
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
@@ -1282,6 +1558,52 @@ function renderClientes(data) {
   `;
 }
 
+function renderBling() {
+  const { groups, missingCount } = resolveBlingFunctions();
+  const totalFunctions = groups.reduce(
+    (sum, group) => sum + group.items.length,
+    0,
+  );
+
+  return `
+    <div class="erp-grid-3">
+      ${metricCard("Modulos", String(groups.length), "Checklist operacional")}
+      ${metricCard("Funcoes", String(totalFunctions), "Cobertura personalizada")}
+      ${metricCard("Status", missingCount ? "Atualizado" : "Completo", missingCount ? `Itens incluidos: ${missingCount}` : "Todas as funcoes mapeadas")}
+    </div>
+
+    <section class="erp-panel">
+      <h2>VTS VISION</h2>
+      <p class="erp-note">Desenvolvedor: Vilarinho Tech Solutions. Solucao personalizada mantendo o padrao visual e operacional do sistema Casa Verde.</p>
+      <ul class="erp-list">
+        <li><span>Telefone suporte</span><strong>(41) 98703-9711</strong></li>
+        <li><span>Site</span><strong>vilarinhotechsolutions.com.br</strong></li>
+        <li><span>Instagram</span><strong>Vilarinho_Tech_Solutions</strong></li>
+        <li><span>E-mail suporte</span><strong>viarinhotechsolutionsvts@gmail.com</strong></li>
+      </ul>
+    </section>
+
+    <section class="erp-panel">
+      <h2>Funcoes personalizadas inspiradas no Bling</h2>
+      <p class="erp-note">Estrutura completa para operacao comercial, fiscal, estoque, compras e financeiro, adaptada para Casa Verde.</p>
+      <div class="admin-list-grid">
+        ${groups
+          .map(
+            (group) => `
+            <article class="admin-list-card">
+              <h3>${group.area}</h3>
+              <ul class="erp-list">
+                ${group.items.map((item) => `<li><span>${item}</span><strong>OK</strong></li>`).join("")}
+              </ul>
+            </article>
+          `,
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderFiscal(data) {
   const docs = data.fiscal;
 
@@ -1725,6 +2047,9 @@ function getViewMarkup(data) {
   }
   if (state.view === "clientes") {
     return renderClientes(data);
+  }
+  if (state.view === "bling") {
+    return renderBling();
   }
   if (state.view === "fiscal") {
     return renderFiscal(data);
