@@ -482,6 +482,38 @@ main {
   color: var(--ink-soft);
 }
 
+.personalized-recos {
+  margin-top: 16px;
+  border-top: 1px dashed var(--line);
+  padding-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.reco-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.reco-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f9fcfa;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.reco-card p {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.quick-reco-add {
+  width: fit-content;
+}
+
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
@@ -932,9 +964,16 @@ main {
   gap: 8px;
 }
 
+.cart-utility-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 .cart-quick-add-row select,
 .cart-quick-add-row input,
-.cart-quick-add-row button {
+.cart-quick-add-row button,
+.cart-utility-row button {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 10px;

@@ -17,6 +17,7 @@ import {
   addToCart,
   applyCoupon,
   calculateTotals,
+  clearCart,
   getActiveCoupon,
   getCart,
   listOrdersByCustomerId,
@@ -281,6 +282,65 @@ function renderProducts() {
   count.textContent = `${products.length} resultados encontrados`;
 }
 
+function renderPersonalizedRecommendations() {
+  const container = el("reco-grid");
+  if (!container) {
+    return;
+  }
+
+  const session = getCustomerSession();
+  const favorites = getFavorites();
+  const history = session?.customerId
+    ? listOrdersByCustomerId(session.customerId)
+        .flatMap((order) => order.items || [])
+        .map((item) => item.productId)
+    : [];
+
+  const sourceIds = [...new Set([...favorites, ...history])].filter(Boolean);
+
+  if (!sourceIds.length) {
+    container.innerHTML =
+      '<p class="empty-state">Adicione favoritos ou conclua um pedido para receber recomendações personalizadas.</p>';
+    return;
+  }
+
+  const sourceProducts = sourceIds
+    .map((id) => getProductById(id))
+    .filter(Boolean);
+  const preferredSpecies = new Set(sourceProducts.map((item) => item.species));
+  const preferredCategories = new Set(
+    sourceProducts.map((item) => item.category),
+  );
+
+  const recommendations = listProducts()
+    .filter((product) => !sourceIds.includes(product.id))
+    .filter(
+      (product) =>
+        preferredSpecies.has(product.species) ||
+        preferredCategories.has(product.category),
+    )
+    .slice(0, 6);
+
+  if (!recommendations.length) {
+    container.innerHTML =
+      '<p class="empty-state">Sem recomendações no momento. Atualize seus favoritos para melhorar as sugestões.</p>';
+    return;
+  }
+
+  container.innerHTML = recommendations
+    .map(
+      (product) => `
+        <article class="reco-card">
+          <h4>${escapeHtml(product.name)}</h4>
+          <p>${escapeHtml(product.species)} • ${escapeHtml(product.category)}</p>
+          <strong>${currency.format(product.price)}</strong>
+          <button class="btn secondary quick-reco-add" data-product-id="${product.id}" type="button">Adicionar</button>
+        </article>
+      `,
+    )
+    .join("");
+}
+
 function cartWithProduct() {
   return getCart()
     .map((item) => {
@@ -493,6 +553,40 @@ function renderCart() {
   updateHeaderCounters();
 }
 
+function addItemsToCart(items = []) {
+  items.forEach((item) => {
+    const productId = String(item?.productId || "");
+    const quantity = Math.max(1, Number(item?.quantity || 1) || 1);
+    if (!productId) {
+      return;
+    }
+    addToCart(productId, quantity);
+  });
+}
+
+function reorderLastOrder() {
+  const session = getCustomerSession();
+  if (!session?.customerId) {
+    return { ok: false, message: "Entre na conta para recomprar pedidos." };
+  }
+
+  const orders = listOrdersByCustomerId(session.customerId);
+  if (!orders.length) {
+    return { ok: false, message: "Nenhum pedido encontrado para recompra." };
+  }
+
+  const lastOrder = [...orders].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+  )[0];
+
+  if (!Array.isArray(lastOrder.items) || !lastOrder.items.length) {
+    return { ok: false, message: "Ultimo pedido sem itens para recompra." };
+  }
+
+  addItemsToCart(lastOrder.items);
+  return { ok: true, message: "Ultimo pedido adicionado na sacola." };
+}
+
 function animateAddToCartButton(button) {
   if (!button) {
     return;
@@ -647,6 +741,7 @@ function populateFilterSelects() {
 
 function bindCatalogEvents() {
   const grid = el("product-grid");
+  const recoGrid = el("reco-grid");
   const searchForm = el("search-form");
   const searchInput = el("search-input");
   const speciesFilter = el("species-filter");
@@ -774,6 +869,23 @@ function bindCatalogEvents() {
       renderProducts();
       logEvent("toggle_favorite", { productId });
     }
+  });
+
+  recoGrid?.addEventListener("click", (event) => {
+    const quickAddButton = event.target.closest(".quick-reco-add");
+    if (!quickAddButton) {
+      return;
+    }
+
+    const productId = String(quickAddButton.dataset.productId || "");
+    if (!productId) {
+      return;
+    }
+
+    addToCart(productId, 1);
+    animateAddToCartButton(quickAddButton);
+    renderCart();
+    showProductAddedDialog();
   });
 
   document.querySelectorAll(".chip").forEach((chip) => {
@@ -998,6 +1110,23 @@ function bindCartEvents() {
     el("cart-add-qty").value = "1";
     renderCart();
     showProductAddedDialog();
+  });
+
+  el("cart-clear-all")?.addEventListener("click", () => {
+    clearCart();
+    el("coupon-feedback").textContent = "Sacola limpa com sucesso.";
+    renderCart();
+  });
+
+  el("cart-reorder-last")?.addEventListener("click", () => {
+    const result = reorderLastOrder();
+    el("coupon-feedback").textContent = result.message;
+    if (!result.ok) {
+      return;
+    }
+
+    renderCart();
+    openCart();
   });
 
   el("cart-add-qty")?.addEventListener("keydown", (event) => {
@@ -1246,6 +1375,7 @@ function renderCustomerSession() {
       profileToggle.textContent = "Editar perfil";
     }
     renderCustomerOrders(null);
+    renderPersonalizedRecommendations();
     return;
   }
 
@@ -1278,6 +1408,7 @@ function renderCustomerSession() {
     profileAddress.value = account?.addressLine || account?.address || "";
   }
   renderCustomerOrders(session.customerId);
+  renderPersonalizedRecommendations();
 }
 
 function updateHeaderAccountActions(session) {
@@ -1608,6 +1739,7 @@ function start() {
   populateFilterSelects();
   renderHighlights();
   renderProducts();
+  renderPersonalizedRecommendations();
   renderReviews();
   renderCart();
   populateCartQuickAdd();

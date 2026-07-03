@@ -230,6 +230,10 @@
             <p id="results-count"></p>
           </div>
           <div id="product-grid" class="product-grid"></div>
+          <section id="personalized-recommendations" class="personalized-recos">
+            <h3>Recomendações para você</h3>
+            <div id="reco-grid" class="reco-grid"></div>
+          </section>
         </section>
       </section>
 
@@ -531,6 +535,12 @@
             <select id="cart-add-product"></select>
             <input id="cart-add-qty" type="number" min="1" step="1" value="1" />
             <button id="cart-add-submit" type="button">Adicionar</button>
+          </div>
+          <div class="cart-utility-row">
+            <button id="cart-clear-all" type="button">Limpar sacola</button>
+            <button id="cart-reorder-last" type="button">
+              Recomprar ultimo pedido
+            </button>
           </div>
           <button id="cart-back-store" class="btn secondary" type="button">
             Voltar para loja
