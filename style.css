@@ -230,6 +230,18 @@ select:focus-visible {
   text-decoration: none;
 }
 
+.ghost-link.admin-greeting {
+  color: var(--brand-1);
+  border-color: #b9d8c6;
+  background: #eef8f2;
+}
+
+.ghost-link.admin-accent-link {
+  color: var(--brand-1);
+  border-color: #b9d8c6;
+  background: #eef8f2;
+}
+
 .instagram-link {
   border-radius: 999px;
   padding: 8px 12px;
@@ -276,6 +288,12 @@ select:focus-visible {
   padding: 6px 12px;
   font-weight: 700;
   font-size: 0.88rem;
+}
+
+.quick-nav a.admin-accent-link {
+  color: #fff;
+  background: var(--brand-1);
+  border-color: var(--brand-1);
 }
 
 .chip {
@@ -517,6 +535,46 @@ main {
   display: grid;
   gap: 8px;
   margin-top: 8px;
+}
+
+.add-cart,
+#cart-add-submit {
+  background: linear-gradient(90deg, #1f6b45, #2f8e5f);
+  border: 1px solid #1f6b45;
+  color: #fff;
+  transition:
+    transform 140ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.add-cart:hover,
+#cart-add-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(31, 107, 69, 0.28);
+  filter: saturate(1.05);
+}
+
+.add-cart:active,
+#cart-add-submit:active {
+  transform: translateY(0);
+}
+
+.add-cart.is-adding,
+#cart-add-submit.is-adding {
+  animation: add-cart-pop 0.34s ease;
+}
+
+@keyframes add-cart-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .services,
@@ -1989,6 +2047,27 @@ iframe.product-media {
 .toast.hide {
   opacity: 0;
   transform: translateY(6px);
+}
+
+.success-dialog {
+  border: 1px solid #b9d8c6;
+  border-radius: 14px;
+  padding: 18px;
+  max-width: min(92vw, 360px);
+  display: grid;
+  gap: 12px;
+  text-align: center;
+  box-shadow: 0 16px 34px rgba(14, 39, 27, 0.24);
+}
+
+.success-dialog::backdrop {
+  background: rgba(11, 23, 17, 0.35);
+}
+
+.success-dialog p {
+  margin: 0;
+  color: #1f6b45;
+  font-weight: 800;
 }
 
 @keyframes toast-in {

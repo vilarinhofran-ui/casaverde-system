@@ -58,6 +58,7 @@ const OAUTH_FLASH_KEY = "casaverde_oauth_flash";
 const REVIEWS_KEY = "casaverde_google_reviews_local";
 let predictiveSearchEntries = [];
 let predictiveSuggestion = "";
+let productAddedDialogTimer = null;
 const GOOGLE_REVIEW_URL =
   "https://www.google.com/search?q=casa+verde+E+FLORA&sca_esv=05ee508a17931f71&sxsrf=APpeQnt5XiVImOga6rlVUvu_nGYid4Tw-g%3A1782938568935&ei=yHtFarLBOPmp1sQP_5OZmAs&biw=1280&bih=551&ved=0ahUKEwiyxbrgq7KVAxX5lJUCHf9JBrMQ4dUDCBI&uact=5&oq=casa+verde+E+FLORA&gs_lp=Egxnd3Mtd2l6LXNlcnAiEmNhc2EgdmVyZGUgRSBGTE9SQTIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIFEAAY7wVIgBtQvQNYtxdwAngBkAEAmAG1AaABlwqqAQMwLjm4AQPIAQD4AQGYAgugAtkKwgIKEAAYRxjWBBiwA8ICDRAAGIAEGIoFGEMYsAPCAg4QABjkAhjWBBiwA9gBAcICExAuGEMYgAQYigUYyAMYsAPYAQHCAhMQLhiABBiKBRhDGMgDGLAD2AEBwgIFEAAYgATCAg4QLhivARjHARiABBiOBcICCxAuGK8BGMcBGIAEwgIKEAAYgAQYigUYQ8ICCxAuGIAEGMcBGK8BwgIKEAAYgAQYFBiHAsICCBAAGAgYHhgNmAMAiAYBkAYRugYGCAEQARgJkgcDMi45oAfjPbIHAzAuObgHyQrCBwcwLjEuOC4yyAcygAgB&sclient=gws-wiz-serp#sv=CAESzQEKuQEStgEKd0FKaVQ0dEk5MEZPU1c3OEFNUkNlRHVkVDJLbDZZY3VaOGZfcHFuYzlrRHQ4VFlvWWFDUVJPaDZVWTBVUG5tUVpNb1h5cmtrMzdxa09jME5BNzVXd3BuNTROeGVwVHdsaVFxcVNBRFJnZXE5b04xMzVCZUpvMHpREhcxSHRGYXJDWExPMzMxc1FQMDhQMWdBbxoiQURzcjlmUklxeWNaeU5pSmtIeVhpM3B2ei1jeE85c0dIdxIEODA1MRoBMyoAMAA4AUAAGAAgj7nz2AZKAhAC";
 
@@ -434,6 +435,77 @@ function renderCart() {
   updateHeaderCounters();
 }
 
+function animateAddToCartButton(button) {
+  if (!button) {
+    return;
+  }
+
+  button.classList.remove("is-adding");
+  void button.offsetWidth;
+  button.classList.add("is-adding");
+
+  window.setTimeout(() => {
+    button.classList.remove("is-adding");
+  }, 360);
+}
+
+function showProductAddedDialog() {
+  const dialog = el("product-added-dialog");
+  if (!dialog) {
+    return;
+  }
+
+  const message = el("product-added-message");
+  if (message) {
+    message.textContent = "Produto Adicionado com Sucesso";
+  }
+
+  if (!dialog.open) {
+    dialog.showModal();
+  }
+
+  if (productAddedDialogTimer) {
+    window.clearTimeout(productAddedDialogTimer);
+  }
+
+  productAddedDialogTimer = window.setTimeout(() => {
+    if (dialog.open) {
+      dialog.close();
+    }
+  }, 1500);
+}
+
+function bindProductAddedDialog() {
+  const dialog = el("product-added-dialog");
+  if (!dialog) {
+    return;
+  }
+
+  el("product-added-close")?.addEventListener("click", () => {
+    dialog.close();
+  });
+
+  dialog.addEventListener("click", (event) => {
+    const rect = dialog.getBoundingClientRect();
+    const clickedOutside =
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom;
+
+    if (clickedOutside) {
+      dialog.close();
+    }
+  });
+
+  dialog.addEventListener("close", () => {
+    if (productAddedDialogTimer) {
+      window.clearTimeout(productAddedDialogTimer);
+      productAddedDialogTimer = null;
+    }
+  });
+}
+
 function renderCommercialShowcase() {
   const promoList = el("promo-list");
   const subscriptionList = el("subscription-list");
@@ -629,8 +701,10 @@ function bindCatalogEvents() {
       const qtyInput = card?.querySelector(".add-qty");
       const quantity = Math.max(1, Number(qtyInput?.value || 1) || 1);
       addToCart(productId, quantity);
+      animateAddToCartButton(addButton);
       renderCart();
       openCart();
+      showProductAddedDialog();
       logEvent("add_to_cart", { productId, quantity });
       return;
     }
@@ -757,14 +831,17 @@ function bindCartEvents() {
   el("cart-add-submit")?.addEventListener("click", () => {
     const productId = String(el("cart-add-product")?.value || "");
     const quantity = Math.max(1, Number(el("cart-add-qty")?.value || 1) || 1);
+    const addSubmitButton = el("cart-add-submit");
 
     if (!productId) {
       return;
     }
 
     addToCart(productId, quantity);
+    animateAddToCartButton(addSubmitButton);
     el("cart-add-qty").value = "1";
     renderCart();
+    showProductAddedDialog();
   });
 
   el("cart-add-qty")?.addEventListener("keydown", (event) => {
@@ -1013,6 +1090,8 @@ function updateHeaderAccountActions(session) {
   const customerAreaBtn = el("customer-area-btn");
   const quickAccountLink = el("quick-account-link");
   const isLoggedIn = Boolean(session);
+  const role = String(session?.role || "").toLowerCase();
+  const isAdmin = role === "admin" || role === "super_admin";
   const firstName =
     String(session?.name || "")
       .trim()
@@ -1023,8 +1102,11 @@ function updateHeaderAccountActions(session) {
   logoutBtn?.classList.toggle("hidden", !isLoggedIn);
   if (customerAreaBtn) {
     customerAreaBtn.textContent = isLoggedIn
-      ? `Olá, ${firstName}`
+      ? isAdmin
+        ? "Olá, Admin"
+        : `Olá, ${firstName}`
       : "Minha conta";
+    customerAreaBtn.classList.toggle("admin-greeting", isLoggedIn && isAdmin);
   }
   if (quickAccountLink) {
     quickAccountLink.textContent = isLoggedIn
@@ -1050,6 +1132,7 @@ function updateAdminLinksVisibility(session) {
     }
 
     link.classList.toggle("hidden", !isAdmin);
+    link.classList.toggle("admin-accent-link", isAdmin);
   });
 }
 
@@ -1265,6 +1348,7 @@ function start() {
 
   bindCatalogEvents();
   bindCartEvents();
+  bindProductAddedDialog();
   bindEngagementForms();
   bindCustomerAccount();
   bindShortcuts();
