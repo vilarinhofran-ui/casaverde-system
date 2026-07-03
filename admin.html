@@ -36,6 +36,18 @@
         </article>
       </section>
 
+      <form id="admin-search-form" class="admin-search-bar" role="search">
+        <input
+          id="admin-search-input"
+          type="search"
+          list="admin-search-suggestions"
+          placeholder="Buscar área, atalho ou ação do painel..."
+          aria-label="Buscar no painel admin"
+        />
+        <button class="btn secondary" type="submit">Ir</button>
+      </form>
+      <datalist id="admin-search-suggestions"></datalist>
+
       <nav class="admin-section-nav" aria-label="Atalhos do painel">
         <button
           class="ghost-link"
@@ -71,6 +83,20 @@
           data-scroll-target="approvals-section"
         >
           Aprovações
+        </button>
+        <button
+          class="ghost-link"
+          type="button"
+          data-scroll-target="migration-section"
+        >
+          Migração
+        </button>
+        <button
+          class="ghost-link"
+          type="button"
+          data-scroll-target="commercial-section"
+        >
+          Comercial
         </button>
       </nav>
 
@@ -148,6 +174,158 @@
             <tbody id="access-approvals-list"></tbody>
           </table>
         </div>
+      </section>
+
+      <section id="migration-section" class="admin-block">
+        <h2>Migração de dados (Bling e similares)</h2>
+        <p class="erp-note">
+          Importe produtos, clientes, pedidos e usuários de outros ERPs usando
+          CSV ou JSON.
+        </p>
+
+        <form id="migration-form" class="erp-option-form">
+          <select id="migration-source" required>
+            <option value="bling_csv">Bling (CSV)</option>
+            <option value="similar_csv">Sistema similar (CSV)</option>
+            <option value="generic_json">JSON estruturado</option>
+          </select>
+          <input
+            id="migration-file"
+            type="file"
+            accept=".csv,.json,application/json,text/csv"
+            required
+          />
+          <button class="btn secondary" type="submit">Importar dados</button>
+        </form>
+
+        <p id="migration-feedback" class="erp-feedback"></p>
+      </section>
+
+      <section id="commercial-section" class="admin-block">
+        <h2>Comercial e checkout</h2>
+        <p class="erp-note">
+          Configure chave PIX e campanhas da loja: cupons, promoções, assinatura
+          e clube de benefícios.
+        </p>
+
+        <h3>PIX do checkout</h3>
+        <form id="pix-settings-form" class="erp-option-form">
+          <input id="pix-key" type="text" placeholder="Chave PIX" required />
+          <input id="pix-holder" type="text" placeholder="Nome do recebedor" />
+          <button class="btn secondary" type="submit">Salvar PIX</button>
+        </form>
+        <p id="pix-settings-feedback" class="erp-feedback"></p>
+
+        <h3>Cupons de desconto</h3>
+        <form id="coupon-form" class="erp-option-form">
+          <input id="coupon-code" type="text" placeholder="Código" required />
+          <select id="coupon-type" required>
+            <option value="percent">Percentual (%)</option>
+            <option value="fixed">Valor fixo (R$)</option>
+          </select>
+          <input
+            id="coupon-value"
+            type="number"
+            min="0.01"
+            step="0.01"
+            placeholder="Valor"
+            required
+          />
+          <input
+            id="coupon-min-subtotal"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Subtotal mínimo (R$)"
+          />
+          <input
+            id="coupon-max-discount"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Desconto máximo (R$)"
+          />
+          <input id="coupon-expires-at" type="datetime-local" />
+          <input id="coupon-description" type="text" placeholder="Descrição" />
+          <button class="btn secondary" type="submit">Criar cupom</button>
+        </form>
+        <p id="coupon-feedback" class="erp-feedback"></p>
+        <div class="erp-table-wrap">
+          <table class="erp-options-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th>Regra</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="coupon-list"></tbody>
+          </table>
+        </div>
+
+        <h3>Promoções</h3>
+        <form id="promotion-form" class="erp-option-form">
+          <input
+            id="promotion-title"
+            type="text"
+            placeholder="Título"
+            required
+          />
+          <input
+            id="promotion-description"
+            type="text"
+            placeholder="Descrição"
+            required
+          />
+          <button class="btn secondary" type="submit">
+            Adicionar promoção
+          </button>
+        </form>
+        <p id="promotion-feedback" class="erp-feedback"></p>
+        <div id="promotion-list" class="admin-list-grid"></div>
+
+        <h3>Assinatura</h3>
+        <form id="subscription-form" class="erp-option-form">
+          <input
+            id="subscription-title"
+            type="text"
+            placeholder="Nome do plano"
+            required
+          />
+          <input
+            id="subscription-description"
+            type="text"
+            placeholder="Descrição do plano"
+            required
+          />
+          <button class="btn secondary" type="submit">Adicionar plano</button>
+        </form>
+        <p id="subscription-feedback" class="erp-feedback"></p>
+        <div id="subscription-admin-list" class="admin-list-grid"></div>
+
+        <h3>Clube de benefícios</h3>
+        <form id="benefit-form" class="erp-option-form">
+          <input
+            id="benefit-title"
+            type="text"
+            placeholder="Título do benefício"
+            required
+          />
+          <input
+            id="benefit-description"
+            type="text"
+            placeholder="Descrição do benefício"
+            required
+          />
+          <button class="btn secondary" type="submit">
+            Adicionar benefício
+          </button>
+        </form>
+        <p id="benefit-feedback" class="erp-feedback"></p>
+        <div id="benefit-list" class="admin-list-grid"></div>
       </section>
 
       <section class="admin-actions">

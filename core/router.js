@@ -6,7 +6,9 @@ export function navigateTo(route) {
 
 export function requireAuth(redirectTo = "login.html") {
   if (!isAuthenticated()) {
-    navigateTo(redirectTo);
+    const next = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const separator = redirectTo.includes("?") ? "&" : "?";
+    navigateTo(`${redirectTo}${separator}next=${encodeURIComponent(next)}`);
     return false;
   }
 

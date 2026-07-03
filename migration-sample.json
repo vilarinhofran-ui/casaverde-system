@@ -1,0 +1,36 @@
+{
+  "products": [
+    {
+      "codigo": "BLG-001",
+      "descricao": "Produto Migrado Bling",
+      "categoria": "Racao",
+      "marca": "Bling Import",
+      "preco": "99,90",
+      "estoque": "15",
+      "ean": "7890001112223"
+    }
+  ],
+  "orders": [
+    {
+      "numero": "BLG-ORD-1001",
+      "cliente": "Cliente Bling",
+      "total": "259,90",
+      "status": "Recebido",
+      "data": "2026-07-03T10:00:00.000Z"
+    }
+  ],
+  "customers": [
+    {
+      "nome": "Cliente Importado",
+      "email": "cliente.importado@teste.com",
+      "telefone": "41999999999"
+    }
+  ],
+  "users": [
+    {
+      "nome": "Gestor Importado",
+      "email": "gestor.importado@teste.com",
+      "perfil": "admin"
+    }
+  ]
+}

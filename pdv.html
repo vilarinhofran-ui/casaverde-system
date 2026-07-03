@@ -64,12 +64,12 @@
 
     <main class="pdv-shell">
       <section class="pdv-hero">
-        <div>
+        <div class="pdv-hero-copy">
           <p class="erp-overline">PDV Omnichannel</p>
-          <h1>Caixa inteligente com pagamento validado</h1>
+          <h1>PDV profissional com controle operacional em tempo real</h1>
           <p>
-            Fluxo completo para venda e entrada de estoque, com rastreabilidade
-            de status e movimentacoes.
+            Venda, entrada de estoque, validacao de pagamento e historico em um
+            fluxo unico para operacao de caixa.
           </p>
         </div>
         <div class="pdv-status-pill">
@@ -78,6 +78,25 @@
             >Workflow obrigatorio: PENDENTE -> CONFIRMADO -> FINALIZADO</small
           >
         </div>
+      </section>
+
+      <section class="pdv-kpis" aria-label="Resumo operacional do PDV">
+        <article class="pdv-kpi-card">
+          <p>Modo</p>
+          <strong id="kpi-mode">Venda</strong>
+        </article>
+        <article class="pdv-kpi-card">
+          <p>Pagamento</p>
+          <strong id="kpi-payment">Dinheiro</strong>
+        </article>
+        <article class="pdv-kpi-card">
+          <p>Itens no carrinho</p>
+          <strong id="kpi-items">0</strong>
+        </article>
+        <article class="pdv-kpi-card">
+          <p>Perfil operador</p>
+          <strong id="kpi-role">Nao identificado</strong>
+        </article>
       </section>
 
       <section class="pdv-grid">
@@ -123,6 +142,17 @@
                 Adicionar
               </button>
             </div>
+            <div class="pdv-quick-qty" aria-label="Quantidades rapidas">
+              <button class="btn secondary" data-quick-qty="1" type="button">
+                Qtd 1
+              </button>
+              <button class="btn secondary" data-quick-qty="2" type="button">
+                Qtd 2
+              </button>
+              <button class="btn secondary" data-quick-qty="5" type="button">
+                Qtd 5
+              </button>
+            </div>
           </div>
 
           <div class="pdv-controls-row">
@@ -148,6 +178,14 @@
                 <option value="cartao_debito">Cartao debito</option>
                 <option value="cartao_credito">Cartao credito</option>
                 <option value="pix_presencial">PIX presencial</option>
+              </optgroup>
+              <optgroup label="Maquinetas integradas">
+                <option value="maquineta_stone">Stone (TEF/SmartPOS)</option>
+                <option value="maquineta_cielo">Cielo Lio</option>
+                <option value="maquineta_pagseguro">
+                  PagSeguro Moderninha
+                </option>
+                <option value="maquineta_sumup">SumUp</option>
               </optgroup>
               <optgroup label="Online">
                 <option value="pix_qrcode">PIX QR Code</option>
@@ -200,6 +238,41 @@
             <small class="pdv-note"
               >Regra critica: nenhuma venda e finalizada sem pagamento
               confirmado.</small
+            >
+          </div>
+
+          <div class="pdv-controls-row">
+            <label>Comandos rapidos de teclado</label>
+            <div class="pdv-shortcut-grid">
+              <button
+                id="shortcut-focus-barcode"
+                class="btn secondary"
+                type="button"
+              >
+                F2 foco bipagem
+              </button>
+              <button
+                id="shortcut-add-selected"
+                class="btn secondary"
+                type="button"
+              >
+                F3 adicionar selecionado
+              </button>
+              <button id="shortcut-confirm" class="btn secondary" type="button">
+                F6 confirmar pagamento
+              </button>
+              <button
+                id="shortcut-finalize"
+                class="btn secondary"
+                type="button"
+              >
+                F8 finalizar
+              </button>
+            </div>
+            <small class="pdv-note"
+              >Atalhos extras: Enter no codigo de barras adiciona item, Ctrl +
+              Backspace remove ultimo item do carrinho, / foca busca na
+              loja.</small
             >
           </div>
         </article>

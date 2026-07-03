@@ -1,0 +1,2 @@
+descricao,codigo,unidade,especie,categoria,marca,preco,estoque,id,total,data,status,cliente,pagamento,cep,endereco,email,telefone,nome,perfil,senha
+Racao Premium CSV,7891234567890,UN,Cachorro,Racao,Casa Verde CSV,149.90,22,CSV-ORD-2001,149.90,2026-07-03T20:05:00.000Z,Recebido,Cliente CSV,Pix,80000000,Rua das Flores 123,cliente.csv@teste.com,41988887777,Gestor CSV,admin,senha123

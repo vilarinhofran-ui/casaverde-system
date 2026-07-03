@@ -30,7 +30,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Merriweather:wght@700;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="icon" type="image/jpeg" href="logo-casaverde.jpg" />
@@ -77,10 +77,24 @@
         />
         <button type="submit">Buscar</button>
       </form>
+      <div id="search-suggestion-board" class="search-suggestion-board"></div>
 
       <div class="header-actions">
         <a href="produtos.html" class="ghost-link">Produtos</a>
         <a href="categorias.html" class="ghost-link">Categorias</a>
+        <button id="customer-register-top-btn" class="ghost-link" type="button">
+          Criar conta
+        </button>
+        <button id="customer-login-top-btn" class="ghost-link" type="button">
+          Entrar
+        </button>
+        <button
+          id="customer-logout-top-btn"
+          class="ghost-link hidden"
+          type="button"
+        >
+          Sair
+        </button>
         <button id="customer-area-btn" class="ghost-link" type="button">
           Minha conta
         </button>
@@ -115,11 +129,12 @@
     </nav>
 
     <nav class="quick-nav" aria-label="Atalhos da pagina">
-      <a href="produtos.html">Produtos</a>
-      <a href="categorias.html">Categorias</a>
       <a href="#servicos">Serviços</a>
       <a href="#marcas">Marcas</a>
-      <a href="#customer-account">Minha conta</a>
+      <a id="quick-account-link" href="#customer-account">Minha conta</a>
+      <a id="quick-admin-link" class="hidden" href="admin.html">Admin</a>
+      <a id="quick-erp-link" class="hidden" href="erp.html">ERP</a>
+      <a id="quick-pdv-link" class="hidden" href="pdv.html">PDV</a>
     </nav>
 
     <main>
@@ -232,6 +247,24 @@
           <article>
             <h3>Clube de benefícios</h3>
             <p>Cashback e ofertas personalizadas para tutores.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="trust-section" id="comercial-dinamico">
+        <h2>Ofertas e relacionamento</h2>
+        <div class="trust-grid">
+          <article>
+            <h3>Promoções ativas</h3>
+            <div id="promo-list" class="dynamic-list"></div>
+          </article>
+          <article>
+            <h3>Planos de assinatura</h3>
+            <div id="subscription-list" class="dynamic-list"></div>
+          </article>
+          <article>
+            <h3>Clube de benefícios</h3>
+            <div id="benefits-list" class="dynamic-list"></div>
           </article>
         </div>
       </section>
@@ -375,34 +408,6 @@
               Avaliar no Google
             </a>
           </article>
-
-          <form id="review-form" class="newsletter-card">
-            <h3>Registrar avaliação</h3>
-            <input
-              id="review-name"
-              type="text"
-              placeholder="Seu nome"
-              required
-            />
-            <select id="review-rating" required>
-              <option value="">Nota</option>
-              <option value="5">5 estrelas</option>
-              <option value="4">4 estrelas</option>
-              <option value="3">3 estrelas</option>
-              <option value="2">2 estrelas</option>
-              <option value="1">1 estrela</option>
-            </select>
-            <input
-              id="review-text"
-              type="text"
-              placeholder="Conte como foi sua experiência"
-              required
-            />
-            <button class="btn secondary" type="submit">
-              Registrar e redirecionar
-            </button>
-            <p id="review-feedback" class="feedback"></p>
-          </form>
         </div>
         <div id="review-list" class="review-list"></div>
       </section>
@@ -467,10 +472,18 @@
 
           <label for="checkout-payment">Pagamento</label>
           <select id="checkout-payment">
-            <option>Pix</option>
-            <option>Cartão de crédito</option>
-            <option>Boleto</option>
+            <option value="Pix">Pix</option>
+            <option value="Cartão de crédito">Cartão de crédito</option>
+            <option value="Boleto">Boleto</option>
           </select>
+
+          <div id="pix-payment-box" class="pix-payment-box hidden">
+            <p><strong>Chave PIX:</strong> <span id="pix-key-text">-</span></p>
+            <p id="pix-holder-text" class="meta"></p>
+            <button id="copy-pix-key" class="btn secondary" type="button">
+              Copiar chave PIX
+            </button>
+          </div>
 
           <button class="btn primary" type="submit">Finalizar compra</button>
         </form>

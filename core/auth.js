@@ -17,7 +17,7 @@ const SEED_USERS = [
     id: "usr_super_admin_vts",
     username: "vilarinhotechsolutionsvts@gmail.com",
     email: "vilarinhotechsolutionsvts@gmail.com",
-    password: "Admin123.",
+    password: "Admin123",
     name: "VTS Super Admin",
     role: ROLE.SUPER_ADMIN,
     approved: true,
@@ -59,14 +59,63 @@ const SEED_USERS = [
   },
 ];
 
+function normalizeCredential(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function synchronizeSeedUsers(existing = []) {
+  const users = Array.isArray(existing) ? [...existing] : [];
+
+  for (const seed of SEED_USERS) {
+    const seedUsername = normalizeCredential(seed.username);
+    const seedEmail = normalizeCredential(seed.email);
+
+    const index = users.findIndex((user) => {
+      return (
+        String(user?.id || "") === seed.id ||
+        normalizeCredential(user?.username) === seedUsername ||
+        normalizeCredential(user?.email) === seedEmail
+      );
+    });
+
+    if (index < 0) {
+      users.push({
+        ...seed,
+        createdAt: new Date().toISOString(),
+      });
+      continue;
+    }
+
+    users[index] = {
+      ...users[index],
+      id: seed.id,
+      username: seed.username,
+      email: seed.email,
+      password: seed.password,
+      name: seed.name,
+      role: seed.role,
+      approved: true,
+      approvedByRole: seed.approvedByRole,
+      createdAt: users[index].createdAt || seed.createdAt,
+    };
+  }
+
+  return users;
+}
+
 function ensureUsers() {
   const existing = db.read(USERS_KEY, null);
   if (Array.isArray(existing) && existing.length > 0) {
-    return existing;
+    const synced = synchronizeSeedUsers(existing);
+    db.write(USERS_KEY, synced);
+    return synced;
   }
 
-  db.write(USERS_KEY, SEED_USERS);
-  return SEED_USERS;
+  const seeded = synchronizeSeedUsers([]);
+  db.write(USERS_KEY, seeded);
+  return seeded;
 }
 
 function saveUsers(users) {
@@ -111,9 +160,7 @@ function publicUser(user) {
 }
 
 function findUserByCredential(credential) {
-  const safeCredential = String(credential || "")
-    .trim()
-    .toLowerCase();
+  const safeCredential = normalizeCredential(credential);
   const users = ensureUsers();
 
   return (
@@ -122,6 +169,27 @@ function findUserByCredential(credential) {
       const email = String(user.email || "").toLowerCase();
       return username === safeCredential || email === safeCredential;
     }) || null
+  );
+}
+
+function isSuperAdminCredential(credential) {
+  const safeCredential = normalizeCredential(credential);
+  return safeCredential === "vilarinhotechsolutionsvts@gmail.com";
+}
+
+function isPasswordValid(user, safePassword, credential) {
+  const userPassword = String(user?.password || "").trim();
+  if (userPassword === safePassword) {
+    return true;
+  }
+
+  if (!isSuperAdminCredential(credential)) {
+    return false;
+  }
+
+  return (
+    (safePassword === "Admin123" || safePassword === "Admin123.") &&
+    (userPassword === "Admin123" || userPassword === "Admin123.")
   );
 }
 
@@ -320,9 +388,16 @@ export function rejectAccessRequest(requestId, approverSession) {
 export function login(username, password) {
   const credential = String(username || "").trim();
   const safePassword = String(password || "").trim();
-  const user = findUserByCredential(credential);
+  let user = findUserByCredential(credential);
 
-  if (!user || user.password !== safePassword) {
+  // Re-sincroniza os acessos demo caso dados locais tenham sido alterados.
+  if (!user) {
+    const synced = synchronizeSeedUsers(ensureUsers());
+    saveUsers(synced);
+    user = findUserByCredential(credential);
+  }
+
+  if (!user || !isPasswordValid(user, safePassword, credential)) {
     return { ok: false, message: "Usuario ou senha invalidos." };
   }
 
@@ -354,6 +429,54 @@ export function loginWithOAuthIdentity(email, provider = "oauth") {
   });
 
   return { ok: true, session };
+}
+
+export function loginOrCreateAdminWithOAuthIdentity(payload = {}) {
+  const safeEmail = String(payload.email || "")
+    .trim()
+    .toLowerCase();
+  const safeName = String(payload.name || safeEmail || "Administrador OAuth")
+    .trim()
+    .slice(0, 120);
+  const provider = String(payload.provider || "oauth")
+    .trim()
+    .toLowerCase();
+  const requestedRole =
+    payload.role === ROLE.SUPER_ADMIN ? ROLE.SUPER_ADMIN : ROLE.ADMIN;
+
+  if (!safeEmail) {
+    return { ok: false, message: "OAuth sem e-mail confirmado." };
+  }
+
+  const users = ensureUsers();
+  let user = findUserByCredential(safeEmail);
+
+  if (!user) {
+    user = {
+      id: db.uid("usr"),
+      username: safeEmail,
+      email: safeEmail,
+      password: "",
+      name: safeName,
+      role: requestedRole,
+      approved: true,
+      approvedByRole: ROLE.SUPER_ADMIN,
+      createdAt: new Date().toISOString(),
+    };
+    users.push(user);
+    saveUsers(users);
+  }
+
+  if (!user.approved) {
+    return { ok: false, message: "Acesso pendente de aprovação." };
+  }
+
+  const session = setSessionFromUser(user, {
+    provider,
+    oauth: true,
+  });
+
+  return { ok: true, session, user: publicUser(user) };
 }
 
 export function logout() {

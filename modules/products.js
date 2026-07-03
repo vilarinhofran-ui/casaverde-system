@@ -2,80 +2,9 @@ import { db } from "../core/db.js";
 
 const PRODUCT_STOCK_DELTA_KEY = "casaverde_product_stock_delta";
 const PRODUCT_OVERRIDES_KEY = "casaverde_product_overrides";
+const IMPORTED_PRODUCTS_KEY = "casaverde_imported_products";
 
 const BASE_PRODUCTS = [
-  {
-    id: "dog-ration-1",
-    barcode: "7891000000010",
-    name: "Racao Super Premium Adulto 15kg",
-    unit: "KG",
-    species: "Cachorro",
-    category: "Racao",
-    brand: "Casa Verde Select",
-    price: 259.9,
-    oldPrice: 289.9,
-    stock: 12,
-    badge: "Mais vendido",
-    rating: 4.8,
-    deliveryHours: 3,
-    icon: "🐶",
-    imageUrl: "",
-    videoUrl: "",
-  },
-  {
-    id: "dog-snack-1",
-    barcode: "7891000000027",
-    name: "Petisco Dental Sabor Carne",
-    unit: "UN",
-    species: "Cachorro",
-    category: "Petisco",
-    brand: "GoodBite",
-    price: 24.9,
-    oldPrice: 31.9,
-    stock: 40,
-    badge: "Oferta",
-    rating: 4.7,
-    deliveryHours: 2,
-    icon: "🦴",
-    imageUrl: "",
-    videoUrl: "",
-  },
-  {
-    id: "cat-ration-1",
-    barcode: "7891000000034",
-    name: "Racao Gato Castrado Salmao 10kg",
-    unit: "KG",
-    species: "Gato",
-    category: "Racao",
-    brand: "Felina Prime",
-    price: 219.9,
-    oldPrice: 249.9,
-    stock: 16,
-    badge: "Top gatos",
-    rating: 4.9,
-    deliveryHours: 4,
-    icon: "🐱",
-    imageUrl: "",
-    videoUrl: "",
-  },
-  {
-    id: "cat-litter-1",
-    barcode: "7891000000041",
-    name: "Areia Biodegradavel 4kg",
-    unit: "KG",
-    species: "Gato",
-    category: "Higiene",
-    brand: "EcoPaws",
-    price: 39.9,
-    oldPrice: 44.9,
-    stock: 28,
-    badge: "Sustentavel",
-    rating: 4.6,
-    deliveryHours: 6,
-    icon: "🧼",
-    imageUrl: "",
-    videoUrl: "",
-  },
   {
     id: "bird-feed-1",
     barcode: "7891000000058",
@@ -230,6 +159,15 @@ function readOverrides() {
   return db.read(PRODUCT_OVERRIDES_KEY, {});
 }
 
+function readImportedProducts() {
+  const raw = db.read(IMPORTED_PRODUCTS_KEY, []);
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.filter((item) => item && typeof item === "object");
+}
+
 function getEffectiveStockValue(product) {
   const delta = readStockDelta();
   const deltaValue = Number(delta[product.id] || 0);
@@ -248,18 +186,29 @@ function withRuntimeData(product) {
 }
 
 export function listProducts() {
-  return BASE_PRODUCTS.map((product) => withRuntimeData(product));
+  return [...BASE_PRODUCTS, ...readImportedProducts()].map((product) =>
+    withRuntimeData(product),
+  );
 }
 
 export function getProductById(id) {
-  const found = BASE_PRODUCTS.find((product) => product.id === id);
-  return found ? withRuntimeData(found) : null;
+  return listProducts().find((product) => product.id === id) || null;
 }
 
 export function getProductByBarcode(barcode) {
   const normalized = String(barcode || "").trim();
-  const found = BASE_PRODUCTS.find((product) => product.barcode === normalized);
-  return found ? withRuntimeData(found) : null;
+  return (
+    listProducts().find((product) => product.barcode === normalized) || null
+  );
+}
+
+export function replaceImportedProducts(products) {
+  const safeProducts = Array.isArray(products)
+    ? products.filter((item) => item && typeof item === "object")
+    : [];
+
+  db.write(IMPORTED_PRODUCTS_KEY, safeProducts);
+  return safeProducts;
 }
 
 export function updateProductMedia(productId, payload) {

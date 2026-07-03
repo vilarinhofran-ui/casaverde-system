@@ -1,4 +1,5 @@
 import { db } from "../core/db.js";
+import { resolveCoupon } from "./commerce.js";
 
 const CART_KEY = "casaverde_cart";
 const ORDERS_KEY = "casaverde_orders";
@@ -64,17 +65,25 @@ export function clearCart() {
 }
 
 export function applyCoupon(code) {
-  const normalizedCode = String(code || "")
-    .trim()
-    .toUpperCase();
-
-  if (normalizedCode !== "CASAVERDE10") {
+  const result = resolveCoupon(code);
+  if (!result.ok) {
     db.write(ACTIVE_COUPON_KEY, null);
-    return { ok: false, message: "Cupom invalido." };
+    return { ok: false, message: result.message };
   }
 
-  db.write(ACTIVE_COUPON_KEY, normalizedCode);
-  return { ok: true, message: "Cupom aplicado: 10% OFF" };
+  const active = {
+    id: result.coupon.id,
+    code: result.coupon.code,
+    type: result.coupon.type,
+    value: result.coupon.value,
+    minSubtotal: Number(result.coupon.minSubtotal || 0),
+    maxDiscount: Number(result.coupon.maxDiscount || 0),
+    description: result.coupon.description || "",
+    expiresAt: result.coupon.expiresAt || null,
+  };
+
+  db.write(ACTIVE_COUPON_KEY, active);
+  return { ok: true, message: `Cupom aplicado: ${active.code}` };
 }
 
 export function getActiveCoupon() {
@@ -142,8 +151,18 @@ export function calculateTotals(cartItems, productLookup, options = {}) {
   });
 
   let discount = 0;
-  if (getActiveCoupon() === "CASAVERDE10") {
-    discount = Math.min(subtotal * 0.1, 70);
+  const activeCoupon = getActiveCoupon();
+  if (activeCoupon && subtotal >= Number(activeCoupon.minSubtotal || 0)) {
+    if (activeCoupon.type === "fixed") {
+      discount = Number(activeCoupon.value || 0);
+    } else {
+      discount = subtotal * (Number(activeCoupon.value || 0) / 100);
+    }
+
+    const maxDiscount = Number(activeCoupon.maxDiscount || 0);
+    if (maxDiscount > 0) {
+      discount = Math.min(discount, maxDiscount);
+    }
   }
 
   const total = Math.max(0, subtotal + shipping - discount);

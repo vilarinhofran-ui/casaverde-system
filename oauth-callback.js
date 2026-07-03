@@ -1,4 +1,7 @@
-import { loginWithOAuthIdentity } from "./core/auth.js";
+import {
+  loginOrCreateAdminWithOAuthIdentity,
+  loginWithOAuthIdentity,
+} from "./core/auth.js";
 import { clearPendingOAuth, readPendingOAuth } from "./core/oauth.js";
 import { loginCustomerWithOAuth } from "./modules/users.js";
 
@@ -41,11 +44,11 @@ function setFlashAndRedirect(message, context = "customer") {
     context === "admin" ? "admin.html" : "index.html#customer-account";
 }
 
-async function exchangeCode(provider, code) {
+async function exchangeCode(provider, code, context, redirectUri) {
   const response = await fetch("/api/oauth/exchange", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, code }),
+    body: JSON.stringify({ provider, code, context, redirectUri }),
   });
   return response.json();
 }
@@ -90,7 +93,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (params.code && provider !== "oauth") {
-    const exchanged = await exchangeCode(provider, params.code);
+    const exchanged = await exchangeCode(
+      provider,
+      params.code,
+      context,
+      pending?.redirectUri,
+    );
     clearPendingOAuth();
 
     if (!exchanged.ok || !exchanged.profile?.email) {
@@ -101,7 +109,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const result =
       context === "admin"
-        ? loginWithOAuthIdentity(exchanged.profile.email, provider)
+        ? loginOrCreateAdminWithOAuthIdentity({
+            email: exchanged.profile.email,
+            name: exchanged.profile.name || "Administrador OAuth",
+            provider,
+            role: exchanged?.access?.role,
+          })
         : loginCustomerWithOAuth({
             email: exchanged.profile.email,
             name: exchanged.profile.name || "Cliente OAuth",

@@ -250,6 +250,60 @@ function escapeAttr(value) {
 }
 
 function getSchema(moduleKey) {
+  if (moduleKey === "estoque") {
+    const products = listProducts();
+    const categories = [
+      ...new Set([
+        "Racao",
+        "Petisco",
+        "Brinquedo",
+        "Farmacia",
+        "Higiene",
+        "Acessorio",
+        "Jardinagem",
+        ...products.map((item) => item.category).filter(Boolean),
+      ]),
+    ];
+    const brands = [
+      ...new Set([
+        "Casa Verde",
+        "Premier",
+        "Golden",
+        "Royal Canin",
+        "Hills",
+        ...products.map((item) => item.brand).filter(Boolean),
+      ]),
+    ];
+
+    return {
+      title: "Itens de estoque",
+      fields: [
+        { key: "name", label: "Produto", type: "text" },
+        {
+          key: "category",
+          label: "Categoria",
+          type: "select",
+          options: categories,
+        },
+        {
+          key: "brand",
+          label: "Marca",
+          type: "select",
+          options: brands,
+        },
+        { key: "stock", label: "Estoque", type: "number" },
+        { key: "price", label: "Preco", type: "number" },
+      ],
+      defaults: {
+        name: "Novo item",
+        category: categories[0] || "Geral",
+        brand: brands[0] || "Casa Verde",
+        stock: 0,
+        price: 0,
+      },
+    };
+  }
+
   if (MODULE_SCHEMAS[moduleKey]) {
     return MODULE_SCHEMAS[moduleKey];
   }
@@ -664,6 +718,13 @@ function renderNav() {
     `,
     )
     .join("");
+
+  const searchList = byId("erp-module-suggestions");
+  if (searchList) {
+    searchList.innerHTML = state.options
+      .map((option) => `<option value="${option.label}"></option>`)
+      .join("");
+  }
 }
 
 function getOptionByKey(key) {
@@ -1438,6 +1499,19 @@ function renderFieldInput(record, field, moduleKey) {
 function renderModuleCrud(moduleKey) {
   const schema = getSchema(moduleKey);
   const records = state.records[moduleKey] || [];
+  const stockTemplates =
+    moduleKey === "estoque"
+      ? [
+          { name: "Racao Premium 15kg", category: "Racao", brand: "Premier" },
+          { name: "Petisco Natural", category: "Petisco", brand: "Casa Verde" },
+          {
+            name: "Brinquedo Mordedor",
+            category: "Brinquedo",
+            brand: "Golden",
+          },
+          { name: "Shampoo Pet", category: "Higiene", brand: "Casa Verde" },
+        ]
+      : [];
 
   const head = schema.fields.map((field) => `<th>${field.label}</th>`).join("");
 
@@ -1505,6 +1579,21 @@ function renderModuleCrud(moduleKey) {
       </div>
 
       <form class="erp-option-form" data-module-form="${moduleKey}">
+        ${
+          stockTemplates.length
+            ? `
+        <select data-stock-template="${moduleKey}" aria-label="Modelo de item">
+          <option value="">Modelo rápido (opcional)</option>
+          ${stockTemplates
+            .map(
+              (preset) =>
+                `<option value="${escapeAttr(JSON.stringify(preset))}">${escapeAttr(preset.name)}</option>`,
+            )
+            .join("")}
+        </select>
+        `
+            : ""
+        }
         ${addInputs}
         <button class="btn primary" type="submit">Adicionar registro</button>
       </form>
@@ -1543,7 +1632,7 @@ function renderConfig(data) {
         <h2>Padroes visuais</h2>
         <ul class="erp-list">
           <li><span>Fonte principal</span><strong>Manrope</strong></li>
-          <li><span>Fonte de destaque</span><strong>Baloo 2</strong></li>
+          <li><span>Fonte de destaque</span><strong>Manrope</strong></li>
           <li><span>Cor primaria</span><strong>#1f6b45</strong></li>
           <li><span>Cor secundaria</span><strong>#3f9b63</strong></li>
           <li><span>Cor de apoio</span><strong>#eab75c</strong></li>
@@ -1707,6 +1796,23 @@ function bindEvents() {
     render();
   });
 
+  byId("erp-module-search")?.addEventListener("change", (event) => {
+    const typed = String(event.target.value || "")
+      .trim()
+      .toLowerCase();
+    const option = state.options.find(
+      (item) =>
+        item.label.toLowerCase() === typed || item.key.toLowerCase() === typed,
+    );
+
+    if (!option) {
+      return;
+    }
+
+    state.view = option.key;
+    render();
+  });
+
   byId("erp-logout").addEventListener("click", () => {
     logout();
     navigateTo("login.html");
@@ -1852,6 +1958,55 @@ function bindEvents() {
 
     addOption({ label, key, category });
     form.reset();
+  });
+
+  byId("erp-content").addEventListener("change", (event) => {
+    const templateSelect = event.target.closest("select[data-stock-template]");
+    if (!templateSelect) {
+      return;
+    }
+
+    const moduleKey = templateSelect.dataset.stockTemplate;
+    const form = templateSelect.closest(
+      `form[data-module-form="${moduleKey}"]`,
+    );
+    if (!form || !templateSelect.value) {
+      return;
+    }
+
+    try {
+      const preset = JSON.parse(templateSelect.value);
+      Object.entries(preset).forEach(([key, value]) => {
+        const input = form.querySelector(`[data-add-field="${key}"]`);
+        if (input) {
+          input.value = String(value);
+        }
+      });
+
+      const stockInput = form.querySelector('[data-add-field="stock"]');
+      const priceInput = form.querySelector('[data-add-field="price"]');
+      if (stockInput) {
+        stockInput.value = "1";
+      }
+      if (priceInput) {
+        priceInput.value = "0";
+      }
+
+      const feedback = form.parentElement?.querySelector(
+        "#erp-module-feedback",
+      );
+      if (feedback) {
+        feedback.textContent =
+          "Modelo aplicado. Ajuste somente estoque e preco.";
+      }
+    } catch {
+      const feedback = form.parentElement?.querySelector(
+        "#erp-module-feedback",
+      );
+      if (feedback) {
+        feedback.textContent = "Falha ao aplicar modelo rapido.";
+      }
+    }
   });
 }
 

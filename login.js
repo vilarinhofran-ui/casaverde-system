@@ -9,8 +9,21 @@ import {
 import { getOAuthLaunchResult } from "./core/oauth.js";
 import { navigateTo } from "./core/router.js";
 
+function resolveNextRoute() {
+  const next = new URLSearchParams(window.location.search).get("next") || "";
+  if (!next.startsWith("/") || next.startsWith("//")) {
+    return "admin.html";
+  }
+
+  return next.slice(1) || "admin.html";
+}
+
+function goAfterLogin() {
+  navigateTo(resolveNextRoute());
+}
+
 if (isAuthenticated()) {
-  navigateTo("admin.html");
+  goAfterLogin();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -22,6 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const codeHelp = document.getElementById("code-help");
   const codeInput = document.getElementById("admin-code");
   const cancelCodeBtn = document.getElementById("cancel-code-btn");
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
 
   function openCodeStep(helpText) {
     codeForm?.classList.remove("hidden");
@@ -51,6 +66,16 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  usernameInput?.focus();
+
+  [usernameInput, passwordInput].forEach((input) => {
+    input?.addEventListener("input", () => {
+      if (errorEl) {
+        errorEl.textContent = "";
+      }
+    });
+  });
+
   form.addEventListener("submit", (event) => {
     event.preventDefault();
 
@@ -66,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    navigateTo("admin.html");
+    goAfterLogin();
   });
 
   googleBtn?.addEventListener("click", async () => {
@@ -96,7 +121,15 @@ document.addEventListener("DOMContentLoaded", () => {
   codeForm?.addEventListener("submit", (event) => {
     event.preventDefault();
 
-    const result = verifyAdminCode(codeInput?.value);
+    const typedCode = String(codeInput?.value || "").trim();
+    if (!/^\d{6}$/.test(typedCode)) {
+      if (codeError) {
+        codeError.textContent = "Digite um codigo de 6 digitos.";
+      }
+      return;
+    }
+
+    const result = verifyAdminCode(typedCode);
 
     if (!result.ok) {
       if (codeError) {
@@ -105,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    navigateTo("admin.html");
+    goAfterLogin();
   });
 
   cancelCodeBtn?.addEventListener("click", () => {

@@ -7,6 +7,12 @@ import {
 } from "./modules/products.js";
 import { logEvent } from "./modules/audit.js";
 import {
+  getPixSettings,
+  listBenefits,
+  listPromotions,
+  listSubscriptionPlans,
+} from "./modules/commerce.js";
+import {
   ORDER_STATUS_OPTIONS,
   addToCart,
   applyCoupon,
@@ -50,6 +56,7 @@ const state = {
 const SAFE_MEDIA_PROTOCOLS = ["http:", "https:", "data:"];
 const OAUTH_FLASH_KEY = "casaverde_oauth_flash";
 const REVIEWS_KEY = "casaverde_google_reviews_local";
+const searchSuggestionIndex = new Map();
 const GOOGLE_REVIEW_URL =
   "https://www.google.com/search?q=casa+verde+E+FLORA&sca_esv=05ee508a17931f71&sxsrf=APpeQnt5XiVImOga6rlVUvu_nGYid4Tw-g%3A1782938568935&ei=yHtFarLBOPmp1sQP_5OZmAs&biw=1280&bih=551&ved=0ahUKEwiyxbrgq7KVAxX5lJUCHf9JBrMQ4dUDCBI&uact=5&oq=casa+verde+E+FLORA&gs_lp=Egxnd3Mtd2l6LXNlcnAiEmNhc2EgdmVyZGUgRSBGTE9SQTIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIFEAAY7wVIgBtQvQNYtxdwAngBkAEAmAG1AaABlwqqAQMwLjm4AQPIAQD4AQGYAgugAtkKwgIKEAAYRxjWBBiwA8ICDRAAGIAEGIoFGEMYsAPCAg4QABjkAhjWBBiwA9gBAcICExAuGEMYgAQYigUYyAMYsAPYAQHCAhMQLhiABBiKBRhDGMgDGLAD2AEBwgIFEAAYgATCAg4QLhivARjHARiABBiOBcICCxAuGK8BGMcBGIAEwgIKEAAYgAQYigUYQ8ICCxAuGIAEGMcBGK8BwgIKEAAYgAQYFBiHAsICCBAAGAgYHhgNmAMAiAYBkAYRugYGCAEQARgJkgcDMi45oAfjPbIHAzAuObgHyQrCBwcwLjEuOC4yyAcygAgB&sclient=gws-wiz-serp#sv=CAESzQEKuQEStgEKd0FKaVQ0dEk5MEZPU1c3OEFNUkNlRHVkVDJLbDZZY3VaOGZfcHFuYzlrRHQ4VFlvWWFDUVJPaDZVWTBVUG5tUVpNb1h5cmtrMzdxa09jME5BNzVXd3BuNTROeGVwVHdsaVFxcVNBRFJnZXE5b04xMzVCZUpvMHpREhcxSHRGYXJDWExPMzMxc1FQMDhQMWdBbxoiQURzcjlmUklxeWNaeU5pSmtIeVhpM3B2ei1jeE85c0dIdxIEODA1MRoBMyoAMAA4AUAAGAAgj7nz2AZKAhAC";
 
@@ -158,7 +165,11 @@ function toProductCard(product) {
       <p class="price">${currency.format(product.price)}</p>
       <p class="delivery">Entrega em ate ${product.deliveryHours}h</p>
       <div class="card-actions">
-        <button class="btn primary add-cart" data-product-id="${product.id}" type="button">Adicionar</button>
+        <div class="qty-inline">
+          <label for="add-qty-${product.id}">Qtd</label>
+          <input id="add-qty-${product.id}" class="add-qty" type="number" min="1" step="1" value="1" />
+        </div>
+        <button class="btn primary add-cart" data-product-id="${product.id}" type="button">Adicionar ao carrinho</button>
         <button class="btn secondary fav-btn" data-product-id="${product.id}" type="button">
           ${favorite ? "Favoritado" : "Favoritar"}
         </button>
@@ -245,6 +256,127 @@ function listLocalReviews() {
   }
 }
 
+function buildStoreSearchSuggestions() {
+  searchSuggestionIndex.clear();
+
+  const suggestions = [];
+  listProducts().forEach((product) => {
+    suggestions.push({
+      label: product.name,
+      type: "product",
+      query: product.name,
+    });
+
+    suggestions.push({
+      label: `Marca: ${product.brand}`,
+      type: "brand",
+      query: product.brand,
+    });
+  });
+
+  listCategories().forEach((category) => {
+    suggestions.push({
+      label: `Categoria: ${category}`,
+      type: "category",
+      category,
+    });
+  });
+
+  listSpecies().forEach((species) => {
+    suggestions.push({
+      label: `Espécie: ${species}`,
+      type: "species",
+      species,
+    });
+  });
+
+  const unique = new Map();
+  suggestions.forEach((item) => {
+    if (!unique.has(item.label)) {
+      unique.set(item.label, item);
+    }
+  });
+
+  const suggestionValues = [...unique.values()];
+  suggestionValues.forEach((item) => {
+    searchSuggestionIndex.set(item.label.toLowerCase(), item);
+  });
+
+  renderSearchSuggestionBoard("");
+}
+
+function renderSearchSuggestionBoard(value = "") {
+  const board = el("search-suggestion-board");
+  if (!board) {
+    return;
+  }
+
+  const term = normalizeText(value, 80).toLowerCase();
+  const allSuggestions = [...searchSuggestionIndex.values()];
+  const filtered = term
+    ? allSuggestions.filter((item) =>
+        [item.label, item.query, item.category, item.species]
+          .join(" ")
+          .toLowerCase()
+          .includes(term),
+      )
+    : allSuggestions;
+
+  const limited = filtered.slice(0, 8);
+
+  if (!limited.length) {
+    board.innerHTML = "";
+    board.classList.add("hidden");
+    return;
+  }
+
+  board.classList.remove("hidden");
+  board.innerHTML = limited
+    .map((item) => {
+      return `
+        <button class="search-suggestion-chip" type="button" data-suggestion-label="${escapeHtml(item.label)}">
+          ${escapeHtml(item.label)}
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function applyStoreSearch(value) {
+  const normalized = normalizeText(value, 80);
+  const suggestion = searchSuggestionIndex.get(normalized.toLowerCase());
+
+  state.filters.query = "";
+  state.filters.category = "";
+  state.filters.species = "";
+
+  if (!suggestion) {
+    state.filters.query = normalized;
+  } else if (suggestion.type === "category") {
+    state.filters.category = suggestion.category;
+  } else if (suggestion.type === "species") {
+    state.filters.species = suggestion.species;
+  } else {
+    state.filters.query = suggestion.query;
+  }
+
+  const searchInput = el("search-input");
+  if (searchInput) {
+    searchInput.value = normalized;
+  }
+  const speciesFilter = el("species-filter");
+  const categoryFilter = el("category-filter");
+  if (speciesFilter) {
+    speciesFilter.value = state.filters.species;
+  }
+  if (categoryFilter) {
+    categoryFilter.value = state.filters.category;
+  }
+
+  renderProducts();
+  document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" });
+}
+
 function saveLocalReview(review) {
   const current = listLocalReviews();
   localStorage.setItem(
@@ -275,7 +407,8 @@ function renderCart() {
   const coupon = getActiveCoupon();
 
   if (coupon) {
-    couponFeedback.textContent = `Cupom ativo: ${coupon}`;
+    const couponCode = typeof coupon === "string" ? coupon : coupon.code;
+    couponFeedback.textContent = `Cupom ativo: ${couponCode}`;
   } else {
     couponFeedback.textContent = "";
   }
@@ -300,7 +433,16 @@ function renderCart() {
           <div class="qty-row">
             <div class="qty-group">
               <button class="qty-btn" data-action="decrease" data-product-id="${item.productId}" type="button">-</button>
-              <span>${item.quantity}</span>
+              <input
+                class="cart-qty-input"
+                data-action="set-quantity"
+                data-product-id="${item.productId}"
+                type="number"
+                min="1"
+                step="1"
+                value="${Math.max(1, Number(item.quantity) || 1)}"
+                aria-label="Quantidade de ${escapeHtml(item.product.name)}"
+              />
               <button class="qty-btn" data-action="increase" data-product-id="${item.productId}" type="button">+</button>
             </div>
             <strong class="cart-line-total">${currency.format(item.product.price * item.quantity)}</strong>
@@ -322,6 +464,70 @@ function renderCart() {
   `;
 
   updateHeaderCounters();
+}
+
+function renderCommercialShowcase() {
+  const promoList = el("promo-list");
+  const subscriptionList = el("subscription-list");
+  const benefitsList = el("benefits-list");
+
+  if (!promoList || !subscriptionList || !benefitsList) {
+    return;
+  }
+
+  function toHtml(items, emptyText) {
+    if (!items.length) {
+      return `<p class="empty-state">${emptyText}</p>`;
+    }
+
+    return items
+      .slice(0, 4)
+      .map(
+        (item) => `
+          <article class="dynamic-card">
+            <h4>${escapeHtml(item.title)}</h4>
+            <p>${escapeHtml(item.description)}</p>
+          </article>
+        `,
+      )
+      .join("");
+  }
+
+  promoList.innerHTML = toHtml(
+    listPromotions().filter((item) => item.active),
+    "Sem promoções ativas no momento.",
+  );
+  subscriptionList.innerHTML = toHtml(
+    listSubscriptionPlans().filter((item) => item.active),
+    "Sem planos de assinatura disponíveis.",
+  );
+  benefitsList.innerHTML = toHtml(
+    listBenefits().filter((item) => item.active),
+    "Sem benefícios cadastrados.",
+  );
+}
+
+function renderPixPaymentInfo() {
+  const payment = el("checkout-payment")?.value || "";
+  const pixBox = el("pix-payment-box");
+  const pixKeyText = el("pix-key-text");
+  const pixHolderText = el("pix-holder-text");
+
+  if (!pixBox || !pixKeyText || !pixHolderText) {
+    return;
+  }
+
+  if (payment !== "Pix") {
+    pixBox.classList.add("hidden");
+    return;
+  }
+
+  const pix = getPixSettings();
+  pixBox.classList.remove("hidden");
+  pixKeyText.textContent = pix.pixKey || "Chave PIX não cadastrada.";
+  pixHolderText.textContent = pix.pixHolder
+    ? `Recebedor: ${pix.pixHolder}`
+    : "";
 }
 
 function populateFilterSelects() {
@@ -355,10 +561,13 @@ function bindCatalogEvents() {
 
   searchForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    state.filters.query = normalizeText(searchInput.value, 80);
-    searchInput.value = state.filters.query;
-    renderProducts();
-    logEvent("search", { query: state.filters.query });
+    applyStoreSearch(searchInput.value);
+    logEvent("search", { query: normalizeText(searchInput.value, 80) });
+  });
+
+  searchInput.addEventListener("input", () => {
+    const normalized = normalizeText(searchInput.value, 80);
+    renderSearchSuggestionBoard(normalized);
   });
 
   speciesFilter.addEventListener("change", () => {
@@ -411,6 +620,7 @@ function bindCatalogEvents() {
     stockOnly.checked = false;
     favoritesOnly.checked = false;
     el("price-value").textContent = currency.format(350);
+    renderSearchSuggestionBoard("");
     renderProducts();
   });
 
@@ -420,10 +630,13 @@ function bindCatalogEvents() {
 
     if (addButton) {
       const productId = addButton.dataset.productId;
-      addToCart(productId, 1);
+      const card = addButton.closest(".product-card");
+      const qtyInput = card?.querySelector(".add-qty");
+      const quantity = Math.max(1, Number(qtyInput?.value || 1) || 1);
+      addToCart(productId, quantity);
       renderCart();
       openCart();
-      logEvent("add_to_cart", { productId });
+      logEvent("add_to_cart", { productId, quantity });
       return;
     }
 
@@ -434,6 +647,17 @@ function bindCatalogEvents() {
       renderProducts();
       logEvent("toggle_favorite", { productId });
     }
+  });
+
+  el("search-suggestion-board")?.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-suggestion-label]");
+    if (!button) {
+      return;
+    }
+
+    const label = button.dataset.suggestionLabel;
+    applyStoreSearch(label);
+    renderSearchSuggestionBoard(label);
   });
 
   document.querySelectorAll(".chip").forEach((chip) => {
@@ -492,6 +716,31 @@ function bindCartEvents() {
     renderCart();
   });
 
+  el("cart-items").addEventListener("change", (event) => {
+    const qtyInput = event.target.closest("input[data-action='set-quantity']");
+    if (!qtyInput) {
+      return;
+    }
+
+    const productId = qtyInput.dataset.productId;
+    const quantity = Math.max(1, Number(qtyInput.value || 1) || 1);
+    updateCartItem(productId, quantity);
+    renderCart();
+  });
+
+  el("cart-items").addEventListener("keydown", (event) => {
+    const qtyInput = event.target.closest("input[data-action='set-quantity']");
+    if (!qtyInput || event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    const productId = qtyInput.dataset.productId;
+    const quantity = Math.max(1, Number(qtyInput.value || 1) || 1);
+    updateCartItem(productId, quantity);
+    renderCart();
+  });
+
   el("apply-coupon").addEventListener("click", () => {
     const code = normalizeText(el("coupon-input").value, 20).toUpperCase();
     el("coupon-input").value = code;
@@ -513,6 +762,27 @@ function bindCartEvents() {
     });
 
     input?.addEventListener("change", renderCart);
+  });
+
+  el("checkout-payment")?.addEventListener("change", () => {
+    renderPixPaymentInfo();
+    renderCart();
+  });
+
+  el("copy-pix-key")?.addEventListener("click", async () => {
+    const pix = getPixSettings();
+    if (!pix.pixKey) {
+      el("coupon-feedback").textContent = "Chave PIX não configurada no admin.";
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(pix.pixKey);
+      el("coupon-feedback").textContent =
+        "Chave PIX copiada para a área de transferência.";
+    } catch {
+      el("coupon-feedback").textContent = `Copie manualmente: ${pix.pixKey}`;
+    }
   });
 
   el("checkout-form").addEventListener("submit", (event) => {
@@ -600,33 +870,6 @@ function bindEngagementForms() {
     el("tracking-feedback").textContent =
       `Pedido ${order.id.toUpperCase()} | Status: ${order.status} | Total: ${currency.format(order.totals.total)}`;
   });
-
-  el("review-form")?.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    const name = normalizeText(el("review-name")?.value, 80);
-    const rating = String(el("review-rating")?.value || "");
-    const text = normalizeText(el("review-text")?.value, 180);
-
-    if (!name || !rating || !text) {
-      el("review-feedback").textContent =
-        "Preencha nome, nota e comentário para continuar.";
-      return;
-    }
-
-    saveLocalReview({
-      name,
-      rating,
-      text,
-      createdAt: new Date().toISOString(),
-    });
-
-    renderReviews();
-    el("review-feedback").textContent =
-      "Avaliação registrada. Redirecionando para o Google...";
-    el("review-form").reset();
-    window.open(GOOGLE_REVIEW_URL, "_blank", "noopener,noreferrer");
-  });
 }
 
 async function renderReviews() {
@@ -662,7 +905,7 @@ async function renderReviews() {
   const reviews = listLocalReviews();
   if (!reviews.length) {
     container.innerHTML =
-      '<p class="empty-state">Ainda não há avaliações registradas localmente.</p>';
+      '<p class="empty-state">Ainda não há avaliações disponíveis para exibição.</p>';
     return;
   }
 
@@ -719,6 +962,7 @@ function renderCustomerSession() {
   const label = el("customer-session-label");
 
   updateAdminLinksVisibility(session);
+  updateHeaderAccountActions(session);
 
   if (!session) {
     label.textContent = "Entre para acompanhar seus pedidos automaticamente.";
@@ -732,10 +976,44 @@ function renderCustomerSession() {
   renderCustomerOrders(session.customerId);
 }
 
+function updateHeaderAccountActions(session) {
+  const registerBtn = el("customer-register-top-btn");
+  const loginBtn = el("customer-login-top-btn");
+  const logoutBtn = el("customer-logout-top-btn");
+  const customerAreaBtn = el("customer-area-btn");
+  const quickAccountLink = el("quick-account-link");
+  const isLoggedIn = Boolean(session);
+  const firstName =
+    String(session?.name || "")
+      .trim()
+      .split(" ")[0] || "Minha conta";
+
+  registerBtn?.classList.toggle("hidden", isLoggedIn);
+  loginBtn?.classList.toggle("hidden", isLoggedIn);
+  logoutBtn?.classList.toggle("hidden", !isLoggedIn);
+  if (customerAreaBtn) {
+    customerAreaBtn.textContent = isLoggedIn
+      ? `Olá, ${firstName}`
+      : "Minha conta";
+  }
+  if (quickAccountLink) {
+    quickAccountLink.textContent = isLoggedIn
+      ? "Minha conta"
+      : "Entrar / Criar conta";
+  }
+}
+
 function updateAdminLinksVisibility(session) {
   const role = String(session?.role || "").toLowerCase();
   const isAdmin = role === "admin" || role === "super_admin";
-  ["admin-link", "erp-link", "pdv-link"].forEach((id) => {
+  [
+    "admin-link",
+    "erp-link",
+    "pdv-link",
+    "quick-admin-link",
+    "quick-erp-link",
+    "quick-pdv-link",
+  ].forEach((id) => {
     const link = el(id);
     if (!link) {
       return;
@@ -849,6 +1127,27 @@ function bindCustomerAccount() {
     });
   });
 
+  el("customer-register-top-btn")?.addEventListener("click", () => {
+    setAuthMode("register");
+    document.getElementById("customer-account").scrollIntoView({
+      behavior: "smooth",
+    });
+  });
+
+  el("customer-login-top-btn")?.addEventListener("click", () => {
+    setAuthMode("login");
+    document.getElementById("customer-account").scrollIntoView({
+      behavior: "smooth",
+    });
+  });
+
+  el("customer-logout-top-btn")?.addEventListener("click", () => {
+    logoutCustomerAccount();
+    feedback.textContent = "Sessão encerrada.";
+    setAuthMode("login");
+    renderCustomerSession();
+  });
+
   setAuthMode("login");
 
   const oauthFlash = consumeOAuthFlash();
@@ -897,11 +1196,34 @@ function bindShortcuts() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
+
+  document.addEventListener("keydown", (event) => {
+    const tag = String(event.target?.tagName || "").toLowerCase();
+    const inTypingField = tag === "input" || tag === "textarea";
+
+    if (event.key === "/" && !inTypingField) {
+      event.preventDefault();
+      el("search-input")?.focus();
+      return;
+    }
+
+    if (event.altKey && event.key === "1") {
+      event.preventDefault();
+      openCart();
+      return;
+    }
+
+    if (event.altKey && event.key === "2") {
+      event.preventDefault();
+      el("favorites-btn")?.click();
+    }
+  });
 }
 
 function start() {
   updateAdminLinksVisibility(getCustomerSession());
   loadPublicOAuthConfig();
+  buildStoreSearchSuggestions();
   populateFilterSelects();
   renderHighlights();
   renderProducts();
@@ -915,6 +1237,8 @@ function start() {
   bindEngagementForms();
   bindCustomerAccount();
   bindShortcuts();
+  renderCommercialShowcase();
+  renderPixPaymentInfo();
 }
 
 document.addEventListener("DOMContentLoaded", start);

@@ -39,6 +39,10 @@ const paymentLabels = {
   cartao_debito: "Cartao debito",
   cartao_credito: "Cartao credito",
   pix_presencial: "PIX presencial",
+  maquineta_stone: "Stone (TEF/SmartPOS)",
+  maquineta_cielo: "Cielo Lio",
+  maquineta_pagseguro: "PagSeguro Moderninha",
+  maquineta_sumup: "SumUp",
   pix_qrcode: "PIX QR Code",
   link_pagamento: "Link de pagamento",
   gateway: "Gateway",
@@ -222,6 +226,10 @@ function normalizeQty(value) {
   return Number(parsed.toFixed(3));
 }
 
+function isMaquinetaMethod(method) {
+  return String(method || "").startsWith("maquineta_");
+}
+
 function getPermissionSet() {
   const role = state.currentUser?.role || ROLE.CAIXA;
   return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS[ROLE.CAIXA];
@@ -330,6 +338,34 @@ function getCartSummary() {
   };
 }
 
+function renderKpis(summary = getCartSummary()) {
+  const modeEl = el("kpi-mode");
+  const paymentEl = el("kpi-payment");
+  const itemsEl = el("kpi-items");
+  const roleEl = el("kpi-role");
+
+  if (modeEl) {
+    modeEl.textContent = state.mode === "sale" ? "Venda" : "Entrada";
+  }
+
+  if (paymentEl) {
+    paymentEl.textContent =
+      paymentLabels[state.paymentMethod] || state.paymentMethod;
+  }
+
+  if (itemsEl) {
+    const itemCount = summary.lines.reduce(
+      (sum, line) => sum + line.quantity,
+      0,
+    );
+    itemsEl.textContent = Number(itemCount).toFixed(3);
+  }
+
+  if (roleEl) {
+    roleEl.textContent = state.currentUser?.role || "nao identificado";
+  }
+}
+
 function renderCart() {
   const list = el("pdv-cart-list");
   const summary = getCartSummary();
@@ -375,6 +411,8 @@ function renderCart() {
   if (totalEl) {
     totalEl.textContent = currency.format(summary.total);
   }
+
+  renderKpis(summary);
 }
 
 function clearOperation() {
@@ -663,6 +701,7 @@ function setMode(nextMode) {
   }
 
   updateStatusButtons();
+  renderKpis();
 }
 
 function scanBarcodeAndAdd() {
@@ -699,6 +738,109 @@ function addSelectedProduct() {
   }
 
   addItemToCart(product, qty, "manual");
+}
+
+function focusBarcode() {
+  const barcode = el("barcode-input");
+  if (!barcode) {
+    return;
+  }
+  barcode.focus();
+  barcode.select();
+}
+
+async function confirmPaymentAction() {
+  if (
+    !ensurePermission(
+      "confirmPayment",
+      "Apenas supervisor/admin podem confirmar pagamento.",
+    )
+  ) {
+    return;
+  }
+
+  if (!getCartSummary().lines.length) {
+    setFeedback("Adicione itens antes de confirmar pagamento.");
+    showToast("Carrinho vazio", "error");
+    return;
+  }
+
+  if (isMaquinetaMethod(state.paymentMethod)) {
+    updateSaleStatus(SALE_STATUS.CONFIRMED);
+    setFeedback(
+      `Pagamento em ${paymentLabels[state.paymentMethod]} confirmado no terminal.`,
+    );
+    showToast("Pagamento da maquineta confirmado", "success");
+    return;
+  }
+
+  const previewTxId = db.uid("preview");
+  const checkout = await apiAdapters.payments.requestPayment({
+    transactionId: previewTxId,
+    paymentMethod: state.paymentMethod,
+    customerName: state.customerName || "Cliente Casa Verde",
+    total: getCartSummary().total,
+  });
+
+  if (!checkout.ok) {
+    setFeedback(checkout.message || "Falha ao iniciar checkout.");
+    showToast("Falha no checkout", "error");
+    return;
+  }
+
+  if (checkout.checkoutUrl) {
+    setFeedback(
+      `Checkout ${checkout.provider} criado. Aguarde webhook para confirmar e finalize depois.`,
+    );
+    showToast("Checkout online iniciado", "info");
+    return;
+  }
+
+  updateSaleStatus(SALE_STATUS.CONFIRMED);
+  showToast("Pagamento confirmado", "success");
+}
+
+function bindKeyboardShortcuts() {
+  document.addEventListener("keydown", (event) => {
+    const targetTag = String(event.target?.tagName || "").toLowerCase();
+    const isTypingField =
+      targetTag === "input" ||
+      targetTag === "textarea" ||
+      targetTag === "select";
+
+    if (event.key === "F2") {
+      event.preventDefault();
+      focusBarcode();
+      return;
+    }
+
+    if (event.key === "F3") {
+      event.preventDefault();
+      addSelectedProduct();
+      return;
+    }
+
+    if (event.key === "F6") {
+      event.preventDefault();
+      confirmPaymentAction();
+      return;
+    }
+
+    if (event.key === "F8") {
+      event.preventDefault();
+      el("finalize-button")?.click();
+      return;
+    }
+
+    if (!isTypingField && event.ctrlKey && event.key === "Backspace") {
+      event.preventDefault();
+      const last = state.cart[state.cart.length - 1];
+      if (last) {
+        removeItem(last.productId);
+        showToast("Ultimo item removido", "info");
+      }
+    }
+  });
 }
 
 function updateItemQty(productId, action) {
@@ -756,6 +898,7 @@ function bindEvents() {
 
   el("pdv-payment")?.addEventListener("change", (event) => {
     state.paymentMethod = event.target.value;
+    renderKpis();
   });
 
   el("pdv-fiscal-doc")?.addEventListener("change", (event) => {
@@ -771,7 +914,32 @@ function bindEvents() {
     }
   });
 
+  el("pdv-quantity")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addSelectedProduct();
+    }
+  });
+
+  el("pdv-product")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addSelectedProduct();
+    }
+  });
+
   el("add-manual-item")?.addEventListener("click", addSelectedProduct);
+
+  document.querySelectorAll("button[data-quick-qty]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const qty = String(button.dataset.quickQty || "1");
+      const qtyInput = el("pdv-quantity");
+      if (qtyInput) {
+        qtyInput.value = qty;
+        qtyInput.focus();
+      }
+    });
+  });
 
   el("status-pending")?.addEventListener("click", () => {
     if (
@@ -809,40 +977,13 @@ function bindEvents() {
     updateSaleStatus(SALE_STATUS.CANCELED);
   });
 
-  el("status-confirm")?.addEventListener("click", async () => {
-    if (
-      !ensurePermission(
-        "confirmPayment",
-        "Apenas supervisor/admin podem confirmar pagamento.",
-      )
-    ) {
-      return;
-    }
+  el("status-confirm")?.addEventListener("click", confirmPaymentAction);
 
-    const previewTxId = db.uid("preview");
-    const checkout = await apiAdapters.payments.requestPayment({
-      transactionId: previewTxId,
-      paymentMethod: state.paymentMethod,
-      customerName: state.customerName || "Cliente Casa Verde",
-      total: getCartSummary().total,
-    });
-
-    if (!checkout.ok) {
-      setFeedback(checkout.message || "Falha ao iniciar checkout.");
-      showToast("Falha no checkout", "error");
-      return;
-    }
-
-    if (checkout.checkoutUrl) {
-      setFeedback(
-        `Checkout ${checkout.provider} criado. Aguarde webhook para confirmar e finalize depois.`,
-      );
-      showToast("Checkout online iniciado", "info");
-      return;
-    }
-
-    updateSaleStatus(SALE_STATUS.CONFIRMED);
-    showToast("Pagamento confirmado", "success");
+  el("shortcut-focus-barcode")?.addEventListener("click", focusBarcode);
+  el("shortcut-add-selected")?.addEventListener("click", addSelectedProduct);
+  el("shortcut-confirm")?.addEventListener("click", confirmPaymentAction);
+  el("shortcut-finalize")?.addEventListener("click", () => {
+    el("finalize-button")?.click();
   });
 
   el("finalize-button")?.addEventListener("click", async () => {
@@ -895,14 +1036,17 @@ function init() {
   const providerSummary = paymentProviderConfigSummary();
   const paymentStatusEl = el("api-payment-status");
   if (paymentStatusEl) {
-    paymentStatusEl.textContent = `Stripe ${providerSummary.stripe.createCheckoutUrl} | MP ${providerSummary.mercadoPago.createCheckoutUrl}`;
+    paymentStatusEl.textContent = `Stripe ${providerSummary.stripe.createCheckoutUrl} | MP ${providerSummary.mercadoPago.createCheckoutUrl} | Maquinetas: Stone/Cielo/PagSeguro/SumUp em modo terminal local`;
   }
 
   renderProductOptions();
   renderCart();
   renderHistories();
   setMode("sale");
+  renderKpis();
   bindEvents();
+  bindKeyboardShortcuts();
+  focusBarcode();
 
   logEvent("pdv_opened", {
     page: "pdv",

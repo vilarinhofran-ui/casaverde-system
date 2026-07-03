@@ -57,6 +57,22 @@ export function inferProviderFromMethod(paymentMethod) {
     return "mercado_pago";
   }
 
+  if (paymentMethod === "maquineta_stone") {
+    return "stone";
+  }
+
+  if (paymentMethod === "maquineta_cielo") {
+    return "cielo";
+  }
+
+  if (paymentMethod === "maquineta_pagseguro") {
+    return "pagseguro";
+  }
+
+  if (paymentMethod === "maquineta_sumup") {
+    return "sumup";
+  }
+
   return "local";
 }
 
