@@ -369,6 +369,62 @@ export function getCustomerSession() {
   };
 }
 
+export function updateCustomerAccountProfile(customerId, changes = {}) {
+  const safeCustomerId = normalizeText(customerId, 80);
+  if (!safeCustomerId) {
+    return { ok: false, message: "Sessao do cliente invalida." };
+  }
+
+  const nextName = normalizeText(changes?.name, 80);
+  const nextPhone = normalizeText(changes?.phone, 24);
+
+  if (!nextName) {
+    return { ok: false, message: "Informe um nome valido." };
+  }
+
+  let updatedAccount = null;
+
+  db.update(CUSTOMER_USERS_KEY, defaultCustomers, (users) =>
+    users.map((user) => {
+      if (user.id !== safeCustomerId) {
+        return user;
+      }
+
+      updatedAccount = {
+        ...user,
+        name: nextName,
+        phone: nextPhone,
+        updatedAt: new Date().toISOString(),
+      };
+
+      return updatedAccount;
+    }),
+  );
+
+  if (!updatedAccount) {
+    return { ok: false, message: "Conta do cliente nao encontrada." };
+  }
+
+  const currentSession = db.read(CUSTOMER_SESSION_KEY, null);
+  if (currentSession && currentSession.customerId === safeCustomerId) {
+    db.write(CUSTOMER_SESSION_KEY, {
+      ...currentSession,
+      name: updatedAccount.name,
+    });
+  }
+
+  return {
+    ok: true,
+    account: {
+      id: updatedAccount.id,
+      name: updatedAccount.name,
+      email: updatedAccount.email,
+      phone: updatedAccount.phone,
+      role: updatedAccount.role || "customer",
+    },
+  };
+}
+
 export function logoutCustomerAccount() {
   db.write(CUSTOMER_SESSION_KEY, null);
 }

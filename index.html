@@ -312,108 +312,152 @@
           <p id="tracking-feedback" class="feedback"></p>
         </form>
 
-        <section class="tracking-card customer-account" id="customer-account">
-          <h3>Conta do cliente</h3>
-          <p id="customer-session-label" class="feedback">
-            Entre para acompanhar seus pedidos automaticamente.
-          </p>
-
-          <div
-            class="account-mode-switch"
-            role="tablist"
-            aria-label="Acesso da conta"
-          >
-            <button
-              id="auth-mode-register"
-              class="btn secondary"
-              type="button"
-              data-auth-mode="register"
-            >
-              Cadastrar conta
-            </button>
-            <button
-              id="auth-mode-login"
-              class="btn primary"
-              type="button"
-              data-auth-mode="login"
-            >
-              Entrar
-            </button>
-          </div>
-
-          <form id="customer-register-form" class="checkout-form">
-            <label for="register-name">Criar conta</label>
-            <input id="register-name" type="text" placeholder="Nome completo" />
-            <input id="register-email" type="email" placeholder="E-mail" />
-            <input id="register-phone" type="text" placeholder="Telefone" />
-            <input
-              id="register-password"
-              type="password"
-              placeholder="Senha (minimo 6)"
-            />
-            <button class="btn secondary" type="submit">Cadastrar</button>
-          </form>
-
-          <form id="customer-login-form" class="checkout-form hidden">
-            <label for="login-email">Entrar na conta</label>
-            <input id="login-email" type="email" placeholder="E-mail" />
-            <input id="login-password" type="password" placeholder="Senha" />
-            <button class="btn primary" type="submit">Entrar</button>
-            <button id="customer-logout" class="btn secondary" type="button">
-              Sair da conta
-            </button>
-
-            <div class="auth-divider"><span>ou</span></div>
-            <button
-              id="customer-google-login"
-              class="btn google-btn"
-              type="button"
-            >
-              Continuar com Google
-            </button>
-            <button
-              id="customer-apple-login"
-              class="btn apple-btn"
-              type="button"
-            >
-              Continuar com Apple
-            </button>
-          </form>
-
-          <p id="customer-auth-feedback" class="feedback"></p>
-
-          <div>
-            <h4>Pedidos da minha conta</h4>
-            <div id="customer-orders" class="cart-items"></div>
-          </div>
-        </section>
-      </section>
-
-      <section class="trust-section" id="avaliacoes">
-        <h2>Avaliações no Google</h2>
-        <p>
-          Registre sua experiência e seja redirecionado para avaliar a Casa
-          Verde Pet e Flora no Google.
-        </p>
-        <div class="review-cta-grid">
-          <article class="review-highlight">
-            <h3>Avaliação pública</h3>
-            <p>
-              Clique no botão abaixo para abrir a página oficial de avaliação no
-              Google.
+        <div class="account-review-grid">
+          <section class="tracking-card customer-account" id="customer-account">
+            <h3>Conta do cliente</h3>
+            <p id="customer-session-label" class="feedback">
+              Entre para acompanhar seus pedidos automaticamente.
             </p>
-            <a
-              id="google-review-link"
-              class="btn primary"
-              href="https://www.google.com/search?q=casa+verde+E+FLORA&sca_esv=05ee508a17931f71&sxsrf=APpeQnt5XiVImOga6rlVUvu_nGYid4Tw-g%3A1782938568935&ei=yHtFarLBOPmp1sQP_5OZmAs&biw=1280&bih=551&ved=0ahUKEwiyxbrgq7KVAxX5lJUCHf9JBrMQ4dUDCBI&uact=5&oq=casa+verde+E+FLORA&gs_lp=Egxnd3Mtd2l6LXNlcnAiEmNhc2EgdmVyZGUgRSBGTE9SQTIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIFEAAY7wVIgBtQvQNYtxdwAngBkAEAmAG1AaABlwqqAQMwLjm4AQPIAQD4AQGYAgugAtkKwgIKEAAYRxjWBBiwA8ICDRAAGIAEGIoFGEMYsAPCAg4QABjkAhjWBBiwA9gBAcICExAuGEMYgAQYigUYyAMYsAPYAQHCAhMQLhiABBiKBRhDGMgDGLAD2AEBwgIFEAAYgATCAg4QLhivARjHARiABBiOBcICCxAuGK8BGMcBGIAEwgIKEAAYgAQYigUYQ8ICCxAuGIAEGMcBGK8BwgIKEAAYgAQYFBiHAsICCBAAGAgYHhgNmAMAiAYBkAYRugYGCAEQARgJkgcDMi45oAfjPbIHAzAuObgHyQrCBwcwLjEuOC4yyAcygAgB&sclient=gws-wiz-serp#sv=CAESzQEKuQEStgEKd0FKaVQ0dEk5MEZPU1c3OEFNUkNlRHVkVDJLbDZZY3VaOGZfcHFuYzlrRHQ4VFlvWWFDUVJPaDZVWTBVUG5tUVpNb1h5cmtrMzdxa09jME5BNzVXd3BuNTROeGVwVHdsaVFxcVNBRFJnZXE5b04xMzVCZUpvMHpREhcxSHRGYXJDWExPMzMxc1FQMDhQMWdBbxoiQURzcjlmUklxeWNaeU5pSmtIeVhpM3B2ei1jeE85c0dIdxIEODA1MRoBMyoAMAA4AUAAGAAgj7nz2AZKAhAC"
-              target="_blank"
-              rel="noopener noreferrer"
+
+            <div
+              class="account-mode-switch"
+              role="tablist"
+              aria-label="Acesso da conta"
             >
-              Avaliar no Google
-            </a>
-          </article>
+              <button
+                id="auth-mode-register"
+                class="btn secondary"
+                type="button"
+                data-auth-mode="register"
+              >
+                Cadastrar conta
+              </button>
+              <button
+                id="auth-mode-login"
+                class="btn primary"
+                type="button"
+                data-auth-mode="login"
+              >
+                Entrar
+              </button>
+            </div>
+
+            <form id="customer-register-form" class="checkout-form">
+              <label for="register-name">Criar conta</label>
+              <input
+                id="register-name"
+                type="text"
+                placeholder="Nome completo"
+              />
+              <input id="register-email" type="email" placeholder="E-mail" />
+              <input id="register-phone" type="text" placeholder="Telefone" />
+              <input
+                id="register-password"
+                type="password"
+                placeholder="Senha (minimo 6)"
+              />
+              <button class="btn secondary" type="submit">Cadastrar</button>
+            </form>
+
+            <form id="customer-login-form" class="checkout-form hidden">
+              <label for="login-email">Entrar na conta</label>
+              <input id="login-email" type="email" placeholder="E-mail" />
+              <input id="login-password" type="password" placeholder="Senha" />
+              <button class="btn primary" type="submit">Entrar</button>
+              <button id="customer-logout" class="btn secondary" type="button">
+                Sair da conta
+              </button>
+
+              <div class="auth-divider"><span>ou</span></div>
+              <button
+                id="customer-google-login"
+                class="btn google-btn"
+                type="button"
+              >
+                Continuar com Google
+              </button>
+              <button
+                id="customer-apple-login"
+                class="btn apple-btn"
+                type="button"
+              >
+                Continuar com Apple
+              </button>
+            </form>
+
+            <section
+              id="customer-profile-panel"
+              class="customer-profile-panel hidden"
+            >
+              <div class="profile-panel-head">
+                <h4>Editar perfil</h4>
+                <button
+                  id="customer-profile-toggle"
+                  class="btn secondary"
+                  type="button"
+                >
+                  Editar perfil
+                </button>
+              </div>
+              <form id="customer-profile-form" class="checkout-form hidden">
+                <label for="profile-name">Nome</label>
+                <input id="profile-name" type="text" placeholder="Seu nome" />
+                <label for="profile-phone">Telefone</label>
+                <input
+                  id="profile-phone"
+                  type="text"
+                  placeholder="(00) 00000-0000"
+                />
+                <div class="profile-form-actions">
+                  <button class="btn primary" type="submit">
+                    Salvar perfil
+                  </button>
+                  <button
+                    id="customer-profile-cancel"
+                    class="btn secondary"
+                    type="button"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <p id="customer-auth-feedback" class="feedback"></p>
+
+            <div>
+              <h4>Pedidos da minha conta</h4>
+              <div id="customer-orders" class="cart-items"></div>
+            </div>
+          </section>
+
+          <section class="tracking-card review-side" id="avaliacoes">
+            <h3>Avaliações no Google</h3>
+            <p>
+              Registre sua experiência e seja redirecionado para avaliar a Casa
+              Verde Pet e Flora no Google.
+            </p>
+            <div class="review-cta-grid">
+              <article class="review-highlight">
+                <h4>Avaliação pública</h4>
+                <p>
+                  Clique no botão abaixo para abrir a página oficial de
+                  avaliação no Google.
+                </p>
+                <a
+                  id="google-review-link"
+                  class="btn primary"
+                  href="https://www.google.com/search?q=casa+verde+E+FLORA&sca_esv=05ee508a17931f71&sxsrf=APpeQnt5XiVImOga6rlVUvu_nGYid4Tw-g%3A1782938568935&ei=yHtFarLBOPmp1sQP_5OZmAs&biw=1280&bih=551&ved=0ahUKEwiyxbrgq7KVAxX5lJUCHf9JBrMQ4dUDCBI&uact=5&oq=casa+verde+E+FLORA&gs_lp=Egxnd3Mtd2l6LXNlcnAiEmNhc2EgdmVyZGUgRSBGTE9SQTIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIFEAAY7wVIgBtQvQNYtxdwAngBkAEAmAG1AaABlwqqAQMwLjm4AQPIAQD4AQGYAgugAtkKwgIKEAAYRxjWBBiwA8ICDRAAGIAEGIoFGEMYsAPCAg4QABjkAhjWBBiwA9gBAcICExAuGEMYgAQYigUYyAMYsAPYAQHCAhMQLhiABBiKBRhDGMgDGLAD2AEBwgIFEAAYgATCAg4QLhivARjHARiABBiOBcICCxAuGK8BGMcBGIAEwgIKEAAYgAQYigUYQ8ICCxAuGIAEGMcBGK8BwgIKEAAYgAQYFBiHAsICCBAAGAgYHhgNmAMAiAYBkAYRugYGCAEQARgJkgcDMi45oAfjPbIHAzAuObgHyQrCBwcwLjEuOC4yyAcygAgB&sclient=gws-wiz-serp#sv=CAESzQEKuQEStgEKd0FKaVQ0dEk5MEZPU1c3OEFNUkNlRHVkVDJLbDZZY3VaOGZfcHFuYzlrRHQ4VFlvWWFDUVJPaDZVWTBVUG5tUVpNb1h5cmtrMzdxa09jME5BNzVXd3BuNTROeGVwVHdsaVFxcVNBRFJnZXE5b04xMzVCZUpvMHpREhcxSHRGYXJDWExPMzMxc1FQMDhQMWdBbxoiQURzcjlmUklxeWNaeU5pSmtIeVhpM3B2ei1jeE85c0dIdxIEODA1MRoBMyoAMAA4AUAAGAAgj7nz2AZKAhAC"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Avaliar no Google
+                </a>
+              </article>
+            </div>
+            <div id="review-list" class="review-list"></div>
+          </section>
         </div>
-        <div id="review-list" class="review-list"></div>
       </section>
 
       <section class="trust-section" id="confianca">
@@ -436,9 +480,19 @@
     </main>
 
     <aside id="cart-drawer" class="cart-drawer" aria-hidden="true">
+      <button
+        id="cart-resize-handle"
+        class="cart-resize-handle"
+        type="button"
+        aria-label="Arrastar largura da sacola"
+        title="Arrastar para ajustar largura"
+      ></button>
       <div class="drawer-head">
         <h2>Sacola</h2>
-        <button id="close-cart" type="button">Fechar</button>
+        <div class="drawer-head-actions">
+          <button id="toggle-cart-size" type="button">Recolher</button>
+          <button id="close-cart" type="button">Fechar</button>
+        </div>
       </div>
 
       <div id="cart-items" class="cart-items"></div>

@@ -29,10 +29,12 @@ import {
   getCustomerSession,
   getFavorites,
   isFavorite,
+  listCustomerAccounts,
   loginCustomerAccount,
   logoutCustomerAccount,
   registerCustomerAccount,
   toggleFavorite,
+  updateCustomerAccountProfile,
 } from "./modules/users.js";
 import { getOAuthLaunchResult, loadPublicOAuthConfig } from "./core/oauth.js";
 
@@ -56,6 +58,8 @@ const state = {
 const SAFE_MEDIA_PROTOCOLS = ["http:", "https:", "data:"];
 const OAUTH_FLASH_KEY = "casaverde_oauth_flash";
 const REVIEWS_KEY = "casaverde_google_reviews_local";
+const CART_DRAWER_WIDTH_KEY = "casaverde_cart_drawer_width";
+const CART_DRAWER_COLLAPSED_KEY = "casaverde_cart_drawer_collapsed";
 let predictiveSearchEntries = [];
 let predictiveSuggestion = "";
 let productAddedDialogTimer = null;
@@ -740,6 +744,104 @@ function closeCart() {
   el("overlay").classList.remove("show");
 }
 
+function clampCartWidth(value) {
+  const min = 300;
+  const max = Math.min(Math.max(420, window.innerWidth - 24), 760);
+  return Math.max(min, Math.min(value, max));
+}
+
+function syncCartToggleButtonLabel() {
+  const drawer = el("cart-drawer");
+  const toggleBtn = el("toggle-cart-size");
+  if (!drawer || !toggleBtn) {
+    return;
+  }
+
+  toggleBtn.textContent = drawer.classList.contains("collapsed")
+    ? "Expandir"
+    : "Recolher";
+}
+
+function setCartCollapsed(collapsed) {
+  const drawer = el("cart-drawer");
+  if (!drawer) {
+    return;
+  }
+
+  drawer.classList.toggle("collapsed", Boolean(collapsed));
+  localStorage.setItem(
+    CART_DRAWER_COLLAPSED_KEY,
+    Boolean(collapsed) ? "1" : "0",
+  );
+  syncCartToggleButtonLabel();
+}
+
+function setCartDrawerWidth(width) {
+  const drawer = el("cart-drawer");
+  if (!drawer || !Number.isFinite(width)) {
+    return;
+  }
+
+  const clamped = clampCartWidth(width);
+  drawer.style.setProperty("--cart-drawer-width", `${clamped}px`);
+  localStorage.setItem(CART_DRAWER_WIDTH_KEY, String(clamped));
+}
+
+function bindCartDrawerControls() {
+  const drawer = el("cart-drawer");
+  const toggleBtn = el("toggle-cart-size");
+  const resizeHandle = el("cart-resize-handle");
+
+  if (!drawer) {
+    return;
+  }
+
+  const savedWidth = Number(localStorage.getItem(CART_DRAWER_WIDTH_KEY));
+  if (Number.isFinite(savedWidth) && savedWidth > 0) {
+    setCartDrawerWidth(savedWidth);
+  }
+
+  const collapsed = localStorage.getItem(CART_DRAWER_COLLAPSED_KEY) === "1";
+  setCartCollapsed(collapsed);
+
+  toggleBtn?.addEventListener("click", () => {
+    setCartCollapsed(!drawer.classList.contains("collapsed"));
+  });
+
+  window.addEventListener("resize", () => {
+    const current = Number(localStorage.getItem(CART_DRAWER_WIDTH_KEY));
+    if (Number.isFinite(current) && current > 0) {
+      setCartDrawerWidth(current);
+    }
+  });
+
+  resizeHandle?.addEventListener("pointerdown", (event) => {
+    if (window.innerWidth <= 980) {
+      return;
+    }
+
+    event.preventDefault();
+    drawer.classList.add("is-resizing");
+    resizeHandle.setPointerCapture(event.pointerId);
+
+    const onPointerMove = (moveEvent) => {
+      const desiredWidth = window.innerWidth - moveEvent.clientX;
+      setCartDrawerWidth(desiredWidth);
+    };
+
+    const onPointerUp = () => {
+      drawer.classList.remove("is-resizing");
+      resizeHandle.removeEventListener("pointermove", onPointerMove);
+      resizeHandle.removeEventListener("pointerup", onPointerUp);
+      resizeHandle.removeEventListener("pointercancel", onPointerUp);
+    };
+
+    resizeHandle.addEventListener("pointermove", onPointerMove);
+    resizeHandle.addEventListener("pointerup", onPointerUp);
+    resizeHandle.addEventListener("pointercancel", onPointerUp);
+  });
+}
+
 function populateCartQuickAdd() {
   const select = el("cart-add-product");
   if (!select) {
@@ -1067,6 +1169,11 @@ function renderCustomerOrders(customerId) {
 function renderCustomerSession() {
   const session = getCustomerSession();
   const label = el("customer-session-label");
+  const profilePanel = el("customer-profile-panel");
+  const profileForm = el("customer-profile-form");
+  const profileToggle = el("customer-profile-toggle");
+  const profileName = el("profile-name");
+  const profilePhone = el("profile-phone");
 
   updateAdminLinksVisibility(session);
   updateHeaderAccountActions(session);
@@ -1074,12 +1181,28 @@ function renderCustomerSession() {
   if (!session) {
     label.textContent = "Entre para acompanhar seus pedidos automaticamente.";
     el("checkout-name").value = "";
+    profilePanel?.classList.add("hidden");
+    profileForm?.classList.add("hidden");
+    if (profileToggle) {
+      profileToggle.textContent = "Editar perfil";
+    }
     renderCustomerOrders(null);
     return;
   }
 
+  const account = listCustomerAccounts().find(
+    (item) => item.id === session.customerId || item.email === session.email,
+  );
+
   label.textContent = `Conta ativa: ${session.name} (${session.email}) | Perfil: ${session.role || "customer"}`;
   el("checkout-name").value = session.name;
+  profilePanel?.classList.remove("hidden");
+  if (profileName) {
+    profileName.value = account?.name || session.name || "";
+  }
+  if (profilePhone) {
+    profilePhone.value = account?.phone || "";
+  }
   renderCustomerOrders(session.customerId);
 }
 
@@ -1157,6 +1280,9 @@ function bindCustomerAccount() {
   const feedback = el("customer-auth-feedback");
   const registerModeBtn = el("auth-mode-register");
   const loginModeBtn = el("auth-mode-login");
+  const profileForm = el("customer-profile-form");
+  const profileToggle = el("customer-profile-toggle");
+  const profileCancel = el("customer-profile-cancel");
 
   function setAuthMode(mode) {
     const isRegister = mode === "register";
@@ -1211,6 +1337,49 @@ function bindCustomerAccount() {
   el("customer-logout")?.addEventListener("click", () => {
     logoutCustomerAccount();
     feedback.textContent = "Sessão encerrada.";
+    renderCustomerSession();
+  });
+
+  profileToggle?.addEventListener("click", () => {
+    const isHidden = profileForm?.classList.contains("hidden");
+    profileForm?.classList.toggle("hidden", !isHidden);
+    profileToggle.textContent = isHidden ? "Fechar edição" : "Editar perfil";
+  });
+
+  profileCancel?.addEventListener("click", () => {
+    profileForm?.classList.add("hidden");
+    if (profileToggle) {
+      profileToggle.textContent = "Editar perfil";
+    }
+    renderCustomerSession();
+  });
+
+  profileForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const session = getCustomerSession();
+
+    if (!session?.customerId) {
+      feedback.textContent = "Entre na conta para editar seu perfil.";
+      return;
+    }
+
+    const response = updateCustomerAccountProfile(session.customerId, {
+      name: normalizeText(el("profile-name")?.value, 80),
+      phone: normalizeText(el("profile-phone")?.value, 24),
+    });
+
+    feedback.textContent = response.ok
+      ? "Perfil atualizado com sucesso."
+      : response.message;
+
+    if (!response.ok) {
+      return;
+    }
+
+    profileForm.classList.add("hidden");
+    if (profileToggle) {
+      profileToggle.textContent = "Editar perfil";
+    }
     renderCustomerSession();
   });
 
@@ -1348,6 +1517,7 @@ function start() {
 
   bindCatalogEvents();
   bindCartEvents();
+  bindCartDrawerControls();
   bindProductAddedDialog();
   bindEngagementForms();
   bindCustomerAccount();
