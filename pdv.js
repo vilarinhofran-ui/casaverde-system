@@ -194,6 +194,122 @@ function el(id) {
   return document.getElementById(id);
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildPrintableDocument(title, transaction, kind = "nf") {
+  const normalizedKind = String(kind || "nf").toLowerCase();
+  const heading =
+    normalizedKind === "recibo"
+      ? "Recibo"
+      : normalizedKind === "comprovante"
+        ? "Comprovante"
+        : "Nota fiscal";
+
+  const rows = (transaction.items || [])
+    .map((item) => {
+      const product = getProductById(item.productId);
+      const itemName = product?.name || item.productId;
+      const unitPrice = Number(item.unitPrice || product?.price || 0);
+      const quantity = Number(item.quantity || 0);
+      const subtotal = unitPrice * quantity;
+
+      return `
+        <tr>
+          <td>${escapeHtml(itemName)}</td>
+          <td>${quantity.toFixed(3)}</td>
+          <td>${currency.format(unitPrice)}</td>
+          <td>${currency.format(subtotal)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return `
+    <!doctype html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${escapeHtml(title)}</title>
+        <style>
+          body { font-family: Manrope, Arial, sans-serif; margin: 24px; color: #1a2722; }
+          h1 { margin: 0 0 8px; color: #1f6b45; }
+          h2 { margin: 0 0 16px; font-size: 1.05rem; color: #35574a; }
+          .meta { margin-bottom: 14px; line-height: 1.45; }
+          table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+          th, td { border: 1px solid #d7e1d8; padding: 8px; text-align: left; }
+          th { background: #eef8f2; }
+          .total { margin-top: 14px; font-weight: 800; }
+        </style>
+      </head>
+      <body>
+        <h1>Casa Verde Pet e Flora</h1>
+        <h2>${escapeHtml(heading)}</h2>
+        <div class="meta">
+          <div><strong>ID:</strong> ${escapeHtml(String(transaction.id || "").toUpperCase())}</div>
+          <div><strong>Data:</strong> ${escapeHtml(dateTime.format(new Date(transaction.createdAt || new Date().toISOString())))}</div>
+          <div><strong>Cliente:</strong> ${escapeHtml(transaction.customerName || "Cliente Casa Verde")}</div>
+          <div><strong>Pagamento:</strong> ${escapeHtml(paymentLabels[transaction.paymentMethod] || transaction.paymentMethod || "-")}</div>
+          <div><strong>Documento:</strong> ${escapeHtml(fiscalDocLabels[transaction.fiscalDocumentType] || transaction.fiscalDocumentType || "-")}</div>
+          <div><strong>Status:</strong> ${escapeHtml(transaction.status || "-")}</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qtd</th>
+              <th>Unitario</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="4">Sem itens</td></tr>'}
+          </tbody>
+        </table>
+
+        <p class="total">Total: ${currency.format(Number(transaction.total || 0))}</p>
+      </body>
+    </html>
+  `;
+}
+
+function printTransactionDocument(transactionId, kind = "nf") {
+  const transaction = getTransactions().find((tx) => tx.id === transactionId);
+  if (!transaction) {
+    setFeedback("Transacao nao encontrada para impressao.");
+    showToast("Nao foi possivel imprimir", "error");
+    return;
+  }
+
+  const kindLabel =
+    kind === "recibo"
+      ? "Recibo"
+      : kind === "comprovante"
+        ? "Comprovante"
+        : "NF";
+  const title = `${kindLabel} ${String(transaction.id).toUpperCase()}`;
+  const popup = window.open("", "_blank", "width=900,height=700");
+
+  if (!popup) {
+    setFeedback("Permita popups para imprimir documentos.");
+    showToast("Bloqueio de popup detectado", "error");
+    return;
+  }
+
+  popup.document.open();
+  popup.document.write(buildPrintableDocument(title, transaction, kind));
+  popup.document.close();
+  popup.focus();
+  popup.print();
+}
+
 function showToast(message, type = "info") {
   const host = el("toast-host");
   if (!host) {
@@ -646,11 +762,18 @@ function renderHistories() {
             <td>${fiscalDocLabels[tx.fiscalDocumentType] || "-"}</td>
             <td>${currency.format(tx.total)}</td>
             <td>${dateTime.format(new Date(tx.createdAt))}</td>
+            <td>
+              <div class="erp-option-actions">
+                <button class="erp-mini-btn" data-print-tx="${tx.id}" data-print-kind="nf" type="button">NF</button>
+                <button class="erp-mini-btn" data-print-tx="${tx.id}" data-print-kind="recibo" type="button">Recibo</button>
+                <button class="erp-mini-btn" data-print-tx="${tx.id}" data-print-kind="comprovante" type="button">Comprovante</button>
+              </div>
+            </td>
           </tr>
         `,
         )
         .join("")
-    : '<tr><td colspan="7">Sem movimentacoes registradas.</td></tr>';
+    : '<tr><td colspan="8">Sem movimentacoes registradas.</td></tr>';
 
   stockBody.innerHTML = stockHistory.length
     ? stockHistory
@@ -1015,6 +1138,21 @@ function bindEvents() {
     if (removeButton) {
       removeItem(removeButton.dataset.removeItem);
     }
+  });
+
+  el("movement-history")?.addEventListener("click", (event) => {
+    const printButton = event.target.closest("button[data-print-tx]");
+    if (!printButton) {
+      return;
+    }
+
+    const txId = String(printButton.dataset.printTx || "");
+    const kind = String(printButton.dataset.printKind || "nf");
+    if (!txId) {
+      return;
+    }
+
+    printTransactionDocument(txId, kind);
   });
 
   el("toggle-theme")?.addEventListener("click", toggleTheme);

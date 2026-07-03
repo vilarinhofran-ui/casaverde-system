@@ -1264,6 +1264,57 @@ function metricCard(label, value, helper = "") {
   `;
 }
 
+function printFiscalDocument(doc, kind = "nf") {
+  const safeKind = String(kind || "nf").toLowerCase();
+  const heading =
+    safeKind === "recibo"
+      ? "Recibo"
+      : safeKind === "comprovante"
+        ? "Comprovante"
+        : "Nota Fiscal";
+
+  const html = `
+    <!doctype html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${escapeAttr(heading)} ${escapeAttr(doc.number || doc.numero || "")}</title>
+        <style>
+          body { font-family: Manrope, Arial, sans-serif; margin: 24px; color: #1a2722; }
+          h1 { margin: 0 0 10px; color: #1f6b45; }
+          h2 { margin: 0 0 14px; color: #35574a; font-size: 1.05rem; }
+          .meta { border: 1px solid #d7e1d8; border-radius: 10px; padding: 12px; background: #f9fcfa; }
+          .meta p { margin: 0 0 6px; }
+        </style>
+      </head>
+      <body>
+        <h1>Casa Verde Pet e Flora</h1>
+        <h2>${escapeAttr(heading)}</h2>
+        <div class="meta">
+          <p><strong>Tipo:</strong> ${escapeAttr(doc.documentType || "NFE")}</p>
+          <p><strong>Numero:</strong> ${escapeAttr(doc.number || doc.numero || "-")}</p>
+          <p><strong>Pedido:</strong> ${escapeAttr(doc.orderRef || "-")}</p>
+          <p><strong>Valor:</strong> ${currency.format(toNumber(doc.value))}</p>
+          <p><strong>Status:</strong> ${escapeAttr(doc.status || "-")}</p>
+          <p><strong>Emissao:</strong> ${escapeAttr(dateTime.format(new Date(doc.issuedAt || new Date().toISOString())))}</p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const popup = window.open("", "_blank", "width=900,height=680");
+  if (!popup) {
+    setConfigFeedback("Permita popups no navegador para imprimir documentos.");
+    return;
+  }
+
+  popup.document.open();
+  popup.document.write(html);
+  popup.document.close();
+  popup.focus();
+  popup.print();
+}
+
 function formatOrderRow(order) {
   return `
     <tr>
@@ -1629,7 +1680,7 @@ function renderFiscal(data) {
       <div class="erp-table-wrap">
         <table class="erp-table">
           <thead>
-            <tr><th>Tipo</th><th>Numero</th><th>Pedido</th><th>Valor</th><th>Status</th><th>Emissao</th></tr>
+            <tr><th>Tipo</th><th>Numero</th><th>Pedido</th><th>Valor</th><th>Status</th><th>Emissao</th><th>Acoes</th></tr>
           </thead>
           <tbody>
             ${
@@ -1644,11 +1695,18 @@ function renderFiscal(data) {
                     <td>${currency.format(toNumber(doc.value))}</td>
                     <td>${doc.status}</td>
                     <td>${dateTime.format(new Date(doc.issuedAt))}</td>
+                    <td>
+                      <div class="erp-option-actions">
+                        <button class="erp-mini-btn" data-fiscal-print="nf" data-fiscal-id="${doc.id}" type="button">NF</button>
+                        <button class="erp-mini-btn" data-fiscal-print="recibo" data-fiscal-id="${doc.id}" type="button">Recibo</button>
+                        <button class="erp-mini-btn" data-fiscal-print="comprovante" data-fiscal-id="${doc.id}" type="button">Comprovante</button>
+                      </div>
+                    </td>
                   </tr>
                 `,
                     )
                     .join("")
-                : '<tr><td colspan="6">Sem documentos fiscais.</td></tr>'
+                : '<tr><td colspan="7">Sem documentos fiscais.</td></tr>'
             }
           </tbody>
         </table>
@@ -2144,6 +2202,22 @@ function bindEvents() {
   });
 
   byId("erp-content").addEventListener("click", (event) => {
+    const fiscalPrintButton = event.target.closest("button[data-fiscal-print]");
+    if (fiscalPrintButton) {
+      const fiscalId = String(fiscalPrintButton.dataset.fiscalId || "");
+      const kind = String(fiscalPrintButton.dataset.fiscalPrint || "nf");
+      const doc = (state.records.fiscal || []).find(
+        (item) => item.id === fiscalId,
+      );
+      if (!doc) {
+        setConfigFeedback("Documento fiscal nao encontrado para impressao.");
+        return;
+      }
+
+      printFiscalDocument(doc, kind);
+      return;
+    }
+
     const recordActionButton = event.target.closest(
       "button[data-record-action]",
     );
