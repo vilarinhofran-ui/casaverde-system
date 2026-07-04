@@ -59,7 +59,7 @@ const ROLE_PERMISSIONS = {
   [ROLE.CAIXA]: {
     setPending: true,
     setProcessing: true,
-    confirmPayment: false,
+    confirmPayment: true,
     cancelSale: false,
   },
   [ROLE.SUPERVISOR]: {
@@ -873,15 +873,6 @@ function focusBarcode() {
 }
 
 async function confirmPaymentAction() {
-  if (
-    !ensurePermission(
-      "confirmPayment",
-      "Apenas supervisor/admin podem confirmar pagamento.",
-    )
-  ) {
-    return;
-  }
-
   if (!getCartSummary().lines.length) {
     setFeedback("Adicione itens antes de confirmar pagamento.");
     showToast("Carrinho vazio", "error");
