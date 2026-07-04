@@ -106,10 +106,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showResetRequestStep() {
-    form.classList.add("hidden");
-    codeForm?.classList.add("hidden");
-    resetConfirmForm?.classList.add("hidden");
     resetRequestForm?.classList.remove("hidden");
+    resetConfirmForm?.classList.add("hidden");
     if (errorEl) {
       errorEl.textContent = "";
     }
@@ -117,11 +115,12 @@ document.addEventListener("DOMContentLoaded", () => {
       resetRequestError.textContent = "";
     }
     resetEmailInput?.focus();
+    resetRequestForm?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   function showLoginStep() {
     form.classList.remove("hidden");
-    resetRequestForm?.classList.add("hidden");
+    resetRequestForm?.classList.remove("hidden");
     resetConfirmForm?.classList.add("hidden");
     if (resetRequestError) {
       resetRequestError.textContent = "";
@@ -155,6 +154,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form) {
     return;
+  }
+
+  const prefillCredential = new URLSearchParams(window.location.search).get(
+    "credential",
+  );
+  const prefillResetEmail = new URLSearchParams(window.location.search).get(
+    "resetEmail",
+  );
+  if (prefillCredential && usernameInput) {
+    usernameInput.value = prefillCredential;
+  }
+  if (prefillResetEmail && resetEmailInput) {
+    resetEmailInput.value = String(prefillResetEmail).trim().toLowerCase();
   }
 
   usernameInput?.focus();
@@ -214,7 +226,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   cancelResetRequestBtn?.addEventListener("click", () => {
-    showLoginStep();
+    if (resetEmailInput) {
+      resetEmailInput.value = "";
+    }
+    if (resetRequestError) {
+      resetRequestError.textContent = "";
+    }
+    usernameInput?.focus();
   });
 
   cancelResetConfirmBtn?.addEventListener("click", () => {

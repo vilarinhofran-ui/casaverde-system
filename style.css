@@ -368,6 +368,41 @@ main {
   flex-wrap: wrap;
 }
 
+.hero-login-quick {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.hero-login-quick label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  opacity: 0.96;
+}
+
+.hero-login-quick-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.hero-login-quick-row input {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.hero-login-quick-row input::placeholder {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.hero-login-quick-row .btn.secondary {
+  border-color: rgba(255, 255, 255, 0.62);
+  color: #0f3f29;
+}
+
 .hero-cards {
   display: grid;
   gap: 10px;
@@ -2092,6 +2127,48 @@ iframe.product-media {
   border-radius: 12px;
   min-height: 40px;
   font-weight: 800;
+}
+
+.pdv-permission-card {
+  border: 1px solid var(--pdv-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--pdv-card) 88%, #fff);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.pdv-permission-summary {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--pdv-ink);
+  font-weight: 700;
+}
+
+.pdv-permission-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pdv-permission-chip {
+  border-radius: 999px;
+  padding: 5px 10px;
+  border: 1px solid var(--pdv-line);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pdv-permission-chip.allowed {
+  border-color: color-mix(in srgb, var(--pdv-accent) 45%, var(--pdv-line));
+  background: color-mix(in srgb, var(--pdv-accent) 12%, var(--pdv-card));
+  color: var(--pdv-accent);
+}
+
+.pdv-permission-chip.blocked {
+  border-color: color-mix(in srgb, #ad3737 45%, var(--pdv-line));
+  background: color-mix(in srgb, #ad3737 10%, var(--pdv-card));
+  color: #ad3737;
 }
 
 .pdv-big-action {

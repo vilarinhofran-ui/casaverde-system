@@ -203,8 +203,76 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function normalizePrintKind(kind = "nf") {
+  const safeKind = String(kind || "nf")
+    .trim()
+    .toLowerCase();
+
+  if (["nf", "nfe", "nf-e", "nfce", "nfc-e"].includes(safeKind)) {
+    return "nf";
+  }
+
+  if (["recibo", "receipt"].includes(safeKind)) {
+    return "recibo";
+  }
+
+  if (["comprovante", "voucher"].includes(safeKind)) {
+    return "comprovante";
+  }
+
+  return "nf";
+}
+
+function resolvePrintLabel(kind = "nf") {
+  const normalizedKind = normalizePrintKind(kind);
+  return normalizedKind === "recibo"
+    ? "Recibo"
+    : normalizedKind === "comprovante"
+      ? "Comprovante"
+      : "NF";
+}
+
+function printHtmlInIframe(html) {
+  const frame = document.createElement("iframe");
+  frame.style.position = "fixed";
+  frame.style.right = "0";
+  frame.style.bottom = "0";
+  frame.style.width = "0";
+  frame.style.height = "0";
+  frame.style.border = "0";
+  frame.setAttribute("aria-hidden", "true");
+  document.body.appendChild(frame);
+
+  const doc = frame.contentWindow?.document;
+  if (!doc || !frame.contentWindow) {
+    frame.remove();
+    return false;
+  }
+
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  const runPrint = () => {
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } finally {
+      window.setTimeout(() => frame.remove(), 1000);
+    }
+  };
+
+  if (doc.readyState === "complete") {
+    runPrint();
+  } else {
+    frame.onload = runPrint;
+  }
+
+  return true;
+}
+
 function buildPrintableDocument(title, transaction, kind = "nf") {
-  const normalizedKind = String(kind || "nf").toLowerCase();
+  const normalizedKind = normalizePrintKind(kind);
   const heading =
     normalizedKind === "recibo"
       ? "Recibo"
@@ -288,26 +356,29 @@ function printTransactionDocument(transactionId, kind = "nf") {
     return;
   }
 
-  const kindLabel =
-    kind === "recibo"
-      ? "Recibo"
-      : kind === "comprovante"
-        ? "Comprovante"
-        : "NF";
+  const normalizedKind = normalizePrintKind(kind);
+  const kindLabel = resolvePrintLabel(normalizedKind);
   const title = `${kindLabel} ${String(transaction.id).toUpperCase()}`;
-  const popup = window.open("", "_blank", "width=900,height=700");
+  const html = buildPrintableDocument(title, transaction, normalizedKind);
 
-  if (!popup) {
-    setFeedback("Permita popups para imprimir documentos.");
-    showToast("Bloqueio de popup detectado", "error");
-    return;
+  if (!printHtmlInIframe(html)) {
+    const popup = window.open("", "_blank", "width=900,height=700");
+    if (!popup) {
+      setFeedback("Permita popups para imprimir documentos.");
+      showToast("Bloqueio de popup detectado", "error");
+      return;
+    }
+
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
+    popup.focus();
+    popup.onload = () => popup.print();
   }
 
-  popup.document.open();
-  popup.document.write(buildPrintableDocument(title, transaction, kind));
-  popup.document.close();
-  popup.focus();
-  popup.print();
+  setFeedback(
+    `${kindLabel} pronto para impressao: ${String(transaction.id).toUpperCase()}.`,
+  );
 }
 
 function showToast(message, type = "info") {
@@ -353,6 +424,39 @@ function getPermissionSet() {
 
 function can(permissionKey) {
   return Boolean(getPermissionSet()[permissionKey]);
+}
+
+function getPermissionCatalog() {
+  return [
+    { key: "setPending", label: "PENDENTE" },
+    { key: "setProcessing", label: "EM PROCESSAMENTO" },
+    { key: "confirmPayment", label: "CONFIRMAR PAGAMENTO" },
+    { key: "cancelSale", label: "CANCELAR" },
+  ];
+}
+
+function renderPermissionPanel() {
+  const summary = el("pdv-permission-summary");
+  const chipsHost = el("pdv-permission-chips");
+
+  if (!summary || !chipsHost) {
+    return;
+  }
+
+  const role = state.currentUser?.role || ROLE.CAIXA;
+  const permissionSet = getPermissionSet();
+  const catalog = getPermissionCatalog();
+  const allowedCount = catalog.filter(
+    (entry) => permissionSet[entry.key],
+  ).length;
+
+  summary.textContent = `Perfil ${role} com ${allowedCount}/${catalog.length} permissoes ativas.`;
+  chipsHost.innerHTML = catalog
+    .map((entry) => {
+      const active = Boolean(permissionSet[entry.key]);
+      return `<span class="pdv-permission-chip ${active ? "allowed" : "blocked"}">${entry.label}: ${active ? "LIBERADO" : "BLOQUEADO"}</span>`;
+    })
+    .join("");
 }
 
 function ensurePermission(permissionKey, denyMessage) {
@@ -736,6 +840,7 @@ function updateStatusButtons() {
   processing.disabled = !isSale || !can("setProcessing");
   confirm.disabled = !isSale || !can("confirmPayment");
   cancel.disabled = !isSale || !can("cancelSale");
+  renderPermissionPanel();
 }
 
 function renderHistories() {
@@ -1138,7 +1243,7 @@ function bindEvents() {
     }
 
     const txId = String(printButton.dataset.printTx || "");
-    const kind = String(printButton.dataset.printKind || "nf");
+    const kind = normalizePrintKind(printButton.dataset.printKind || "nf");
     if (!txId) {
       return;
     }

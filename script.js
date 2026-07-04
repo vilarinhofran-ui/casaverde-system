@@ -1490,6 +1490,8 @@ function bindCustomerAccount() {
   const profileCancel = el("customer-profile-cancel");
   const profileCep = el("profile-cep");
   const profileAddress = el("profile-address");
+  const forgotPasswordSubmit = el("customer-forgot-submit");
+  const forgotPasswordEmail = el("customer-forgot-email");
 
   function setAuthMode(mode) {
     const isRegister = mode === "register";
@@ -1660,6 +1662,23 @@ function bindCustomerAccount() {
     renderCustomerSession();
   });
 
+  forgotPasswordSubmit?.addEventListener("click", () => {
+    const email = normalizeText(
+      forgotPasswordEmail?.value || el("login-email")?.value || "",
+      120,
+    ).toLowerCase();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      feedback.textContent = "Informe um e-mail valido para recuperar senha.";
+      forgotPasswordEmail?.focus();
+      return;
+    }
+
+    const target = new URL("login.htm", window.location.href);
+    target.searchParams.set("resetEmail", email);
+    window.location.href = target.toString();
+  });
+
   setAuthMode("login");
 
   const oauthFlash = consumeOAuthFlash();
@@ -1732,6 +1751,28 @@ function bindShortcuts() {
   });
 }
 
+function bindQuickLoginRedirect() {
+  const form = el("quick-login-redirect-form");
+  const input = el("quick-login-input");
+
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const credential = normalizeText(input?.value || "", 120);
+    const target = new URL("login.htm", window.location.href);
+
+    if (credential) {
+      target.searchParams.set("credential", credential);
+    }
+
+    window.location.href = target.toString();
+  });
+}
+
 function start() {
   updateAdminLinksVisibility(getCustomerSession());
   loadPublicOAuthConfig();
@@ -1753,6 +1794,7 @@ function start() {
   bindEngagementForms();
   bindCustomerAccount();
   bindShortcuts();
+  bindQuickLoginRedirect();
   renderCommercialShowcase();
   renderPixPaymentInfo();
 }
