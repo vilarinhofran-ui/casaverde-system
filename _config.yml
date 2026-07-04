@@ -1,0 +1,8 @@
+exclude:
+  - server.js
+  - package.json
+  - package-lock.json
+  - CHECKLIST-VENDA.md
+  - migration-sample.csv
+  - migration-sample.json
+  - supabase/
