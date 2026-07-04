@@ -36,7 +36,71 @@
         <button id="google-admin-btn" class="btn google-btn" type="button">
           Entrar com Google (Admin)
         </button>
+        <button id="forgot-password-btn" class="btn secondary" type="button">
+          Esqueci minha senha
+        </button>
         <p id="login-error" class="auth-error" aria-live="polite"></p>
+      </form>
+
+      <form id="reset-request-form" class="auth-card code-card hidden">
+        <h2>Esqueci minha senha</h2>
+        <p class="auth-tip">
+          Informe o e-mail cadastrado para receber o codigo de redefinicao.
+        </p>
+
+        <label for="reset-email">E-mail cadastrado</label>
+        <input
+          id="reset-email"
+          name="reset-email"
+          type="email"
+          autocomplete="email"
+          required
+        />
+
+        <button class="btn primary" type="submit">Enviar codigo</button>
+        <button
+          id="cancel-reset-request-btn"
+          class="btn secondary"
+          type="button"
+        >
+          Voltar ao login
+        </button>
+        <p id="reset-request-error" class="auth-error" aria-live="polite"></p>
+      </form>
+
+      <form id="reset-confirm-form" class="auth-card code-card hidden">
+        <h2>Redefinir senha</h2>
+        <p id="reset-confirm-help" class="auth-tip">
+          Digite o codigo recebido no e-mail e sua nova senha.
+        </p>
+
+        <label for="reset-code">Codigo</label>
+        <input
+          id="reset-code"
+          name="reset-code"
+          type="text"
+          maxlength="6"
+          required
+        />
+
+        <label for="reset-new-password">Nova senha</label>
+        <input
+          id="reset-new-password"
+          name="reset-new-password"
+          type="password"
+          autocomplete="new-password"
+          required
+        />
+
+        <button class="btn primary" type="submit">Salvar nova senha</button>
+        <button
+          id="cancel-reset-confirm-btn"
+          class="btn secondary"
+          type="button"
+        >
+          Cancelar
+        </button>
+        <p id="reset-confirm-error" class="auth-error" aria-live="polite"></p>
       </form>
 
       <form id="code-form" class="auth-card code-card hidden">

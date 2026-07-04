@@ -95,6 +95,53 @@ function parseCsvList(rawValue = "") {
     .filter(Boolean);
 }
 
+async function sendPasswordResetCodeEmail(email, code) {
+  const host = String(process.env.SMTP_HOST || "").trim();
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = String(process.env.SMTP_USER || "").trim();
+  const pass = String(process.env.SMTP_PASS || "").trim();
+  const secure = String(process.env.SMTP_SECURE || "false").trim() === "true";
+  const from = String(process.env.SMTP_FROM || user || "").trim();
+
+  if (!host || !port || !user || !pass || !from) {
+    return {
+      ok: false,
+      message: "SMTP nao configurado no backend.",
+    };
+  }
+
+  try {
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: {
+        user,
+        pass,
+      },
+    });
+
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: "Codigo de redefinicao de senha - Casa Verde",
+      text: `Seu codigo de redefinicao e: ${code}. Valido por 10 minutos.`,
+      html: `<p>Seu codigo de redefinicao e: <strong>${code}</strong></p><p>Valido por 10 minutos.</p>`,
+    });
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? `Falha ao enviar e-mail: ${error.message}`
+          : "Falha ao enviar e-mail.",
+    };
+  }
+}
+
 function getGoogleAllowedRedirectUris() {
   const fromUris = parseCsvList(process.env.GOOGLE_REDIRECT_URIS);
   const fromSingle = String(process.env.GOOGLE_REDIRECT_URI || "").trim();
@@ -643,6 +690,27 @@ async function handleApi(req, res, url) {
           : { ok: false, message: "Provider OAuth não suportado." };
 
     return sendJson(res, result.ok ? 200 : 400, result);
+  }
+
+  if (
+    req.method === "POST" &&
+    url.pathname === "/api/password-reset/send-code"
+  ) {
+    const body = await readBody(req);
+    const email = String(body.email || "")
+      .trim()
+      .toLowerCase();
+    const code = String(body.code || "").trim();
+
+    if (!email || !code) {
+      return sendJson(res, 400, {
+        ok: false,
+        message: "email e code sao obrigatorios.",
+      });
+    }
+
+    const result = await sendPasswordResetCodeEmail(email, code);
+    return sendJson(res, result.ok ? 200 : 503, result);
   }
 
   return sendJson(res, 404, { ok: false, message: "Rota API não encontrada." });

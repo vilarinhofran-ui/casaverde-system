@@ -2,6 +2,7 @@ import { db } from "./db.js";
 
 const SESSION_KEY = "casaverde_session";
 const ADMIN_CHALLENGE_KEY = "casaverde_admin_challenge";
+const PASSWORD_RESET_CHALLENGE_KEY = "casaverde_password_reset_challenge";
 const USERS_KEY = "casaverde_users";
 const ACCESS_REQUESTS_KEY = "casaverde_access_requests";
 
@@ -580,6 +581,140 @@ export function getAdminChallenge() {
 
 export function clearAdminChallenge() {
   localStorage.removeItem(ADMIN_CHALLENGE_KEY);
+}
+
+export function getPasswordResetChallenge() {
+  const raw = localStorage.getItem(PASSWORD_RESET_CHALLENGE_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(PASSWORD_RESET_CHALLENGE_KEY);
+    return null;
+  }
+}
+
+export function clearPasswordResetChallenge() {
+  localStorage.removeItem(PASSWORD_RESET_CHALLENGE_KEY);
+}
+
+export function startPasswordReset(email) {
+  const safeEmail = normalizeCredential(email);
+
+  if (!safeEmail || !safeEmail.includes("@")) {
+    return { ok: false, message: "Informe o e-mail cadastrado." };
+  }
+
+  const user = findUserByCredential(safeEmail);
+
+  if (!user || !user.approved) {
+    return { ok: false, message: "Nao encontramos este e-mail cadastrado." };
+  }
+
+  const code = randomCode();
+  const challenge = {
+    email: String(user.email || safeEmail)
+      .trim()
+      .toLowerCase(),
+    code,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+    attempts: 0,
+  };
+
+  localStorage.setItem(PASSWORD_RESET_CHALLENGE_KEY, JSON.stringify(challenge));
+
+  return {
+    ok: true,
+    challenge: {
+      email: challenge.email,
+      expiresAt: challenge.expiresAt,
+      // Em ambiente real, o codigo deve ser enviado por e-mail e nao exibido no front.
+      devCode: challenge.code,
+    },
+  };
+}
+
+export function confirmPasswordReset(email, inputCode, newPassword) {
+  const safeEmail = normalizeCredential(email);
+  const safeCode = String(inputCode || "").trim();
+  const safePassword = String(newPassword || "").trim();
+
+  if (!safeEmail || !safeCode || !safePassword) {
+    return {
+      ok: false,
+      message: "E-mail, codigo e nova senha sao obrigatorios.",
+    };
+  }
+
+  if (safePassword.length < 6) {
+    return {
+      ok: false,
+      message: "A nova senha deve ter ao menos 6 caracteres.",
+    };
+  }
+
+  const challenge = getPasswordResetChallenge();
+
+  if (!challenge) {
+    return { ok: false, message: "Nenhuma redefinicao pendente." };
+  }
+
+  if (Date.now() > Number(challenge.expiresAt || 0)) {
+    clearPasswordResetChallenge();
+    return { ok: false, message: "Codigo expirado. Solicite outro codigo." };
+  }
+
+  const challengeEmail = normalizeCredential(challenge.email);
+  if (safeEmail !== challengeEmail) {
+    return {
+      ok: false,
+      message: "O e-mail informado nao corresponde ao pedido de redefinicao.",
+    };
+  }
+
+  if (safeCode !== String(challenge.code || "").trim()) {
+    const attempts = Number(challenge.attempts || 0) + 1;
+    if (attempts >= 5) {
+      clearPasswordResetChallenge();
+      return {
+        ok: false,
+        message: "Codigo invalido muitas vezes. Solicite um novo codigo.",
+      };
+    }
+
+    localStorage.setItem(
+      PASSWORD_RESET_CHALLENGE_KEY,
+      JSON.stringify({
+        ...challenge,
+        attempts,
+      }),
+    );
+    return { ok: false, message: "Codigo invalido." };
+  }
+
+  const users = ensureUsers();
+  const index = users.findIndex(
+    (user) => normalizeCredential(user.email || user.username) === safeEmail,
+  );
+
+  if (index < 0) {
+    clearPasswordResetChallenge();
+    return { ok: false, message: "Usuario nao encontrado para redefinicao." };
+  }
+
+  users[index] = {
+    ...users[index],
+    password: safePassword,
+    passwordUpdatedAt: new Date().toISOString(),
+  };
+
+  saveUsers(users);
+  clearPasswordResetChallenge();
+  return { ok: true };
 }
 
 export function verifyAdminCode(inputCode) {

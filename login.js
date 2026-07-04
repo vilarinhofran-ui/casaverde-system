@@ -1,8 +1,12 @@
 import {
+  clearPasswordResetChallenge,
   clearAdminChallenge,
+  confirmPasswordReset,
+  getPasswordResetChallenge,
   getAdminChallenge,
   isAuthenticated,
   login,
+  startPasswordReset,
   startGoogleAdminLogin,
   verifyAdminCode,
 } from "./core/auth.js";
@@ -37,6 +41,45 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelCodeBtn = document.getElementById("cancel-code-btn");
   const usernameInput = document.getElementById("username");
   const passwordInput = document.getElementById("password");
+  const forgotPasswordBtn = document.getElementById("forgot-password-btn");
+  const resetRequestForm = document.getElementById("reset-request-form");
+  const resetRequestError = document.getElementById("reset-request-error");
+  const resetEmailInput = document.getElementById("reset-email");
+  const cancelResetRequestBtn = document.getElementById(
+    "cancel-reset-request-btn",
+  );
+  const resetConfirmForm = document.getElementById("reset-confirm-form");
+  const resetConfirmHelp = document.getElementById("reset-confirm-help");
+  const resetConfirmError = document.getElementById("reset-confirm-error");
+  const resetCodeInput = document.getElementById("reset-code");
+  const resetNewPasswordInput = document.getElementById("reset-new-password");
+  const cancelResetConfirmBtn = document.getElementById(
+    "cancel-reset-confirm-btn",
+  );
+
+  async function sendResetCodeEmail(email, code) {
+    try {
+      const response = await fetch("/api/password-reset/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+
+      if (!response.ok) {
+        return { ok: false, message: "Falha ao enviar e-mail de redefinicao." };
+      }
+
+      const data = await response.json();
+      return data?.ok
+        ? { ok: true }
+        : {
+            ok: false,
+            message: data?.message || "Falha ao enviar e-mail de redefinicao.",
+          };
+    } catch {
+      return { ok: false, message: "Falha de rede ao enviar e-mail." };
+    }
+  }
 
   function openCodeStep(helpText) {
     codeForm?.classList.remove("hidden");
@@ -60,6 +103,54 @@ document.addEventListener("DOMContentLoaded", () => {
     if (codeInput) {
       codeInput.value = "";
     }
+  }
+
+  function showResetRequestStep() {
+    form.classList.add("hidden");
+    codeForm?.classList.add("hidden");
+    resetConfirmForm?.classList.add("hidden");
+    resetRequestForm?.classList.remove("hidden");
+    if (errorEl) {
+      errorEl.textContent = "";
+    }
+    if (resetRequestError) {
+      resetRequestError.textContent = "";
+    }
+    resetEmailInput?.focus();
+  }
+
+  function showLoginStep() {
+    form.classList.remove("hidden");
+    resetRequestForm?.classList.add("hidden");
+    resetConfirmForm?.classList.add("hidden");
+    if (resetRequestError) {
+      resetRequestError.textContent = "";
+    }
+    if (resetConfirmError) {
+      resetConfirmError.textContent = "";
+    }
+  }
+
+  function showResetConfirmStep(email, helpText) {
+    resetRequestForm?.classList.add("hidden");
+    form.classList.add("hidden");
+    resetConfirmForm?.classList.remove("hidden");
+    if (resetConfirmHelp) {
+      resetConfirmHelp.textContent = helpText;
+    }
+    if (resetConfirmError) {
+      resetConfirmError.textContent = "";
+    }
+    if (resetEmailInput) {
+      resetEmailInput.value = String(email || "");
+    }
+    if (resetCodeInput) {
+      resetCodeInput.value = "";
+    }
+    if (resetNewPasswordInput) {
+      resetNewPasswordInput.value = "";
+    }
+    resetCodeInput?.focus();
   }
 
   if (!form) {
@@ -118,6 +209,80 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 
+  forgotPasswordBtn?.addEventListener("click", () => {
+    showResetRequestStep();
+  });
+
+  cancelResetRequestBtn?.addEventListener("click", () => {
+    showLoginStep();
+  });
+
+  cancelResetConfirmBtn?.addEventListener("click", () => {
+    clearPasswordResetChallenge();
+    showLoginStep();
+  });
+
+  resetRequestForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = String(resetEmailInput?.value || "")
+      .trim()
+      .toLowerCase();
+    const result = startPasswordReset(email);
+
+    if (!result.ok) {
+      if (resetRequestError) {
+        resetRequestError.textContent = result.message;
+      }
+      return;
+    }
+
+    const emailResult = await sendResetCodeEmail(
+      result.challenge.email,
+      result.challenge.devCode,
+    );
+
+    let helpText = `Codigo enviado para ${result.challenge.email}.`;
+    if (!emailResult.ok) {
+      helpText = `${helpText} Modo local: use o codigo ${result.challenge.devCode}.`;
+    }
+
+    showResetConfirmStep(result.challenge.email, helpText);
+  });
+
+  resetConfirmForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const email = String(resetEmailInput?.value || "")
+      .trim()
+      .toLowerCase();
+    const code = String(resetCodeInput?.value || "").trim();
+    const newPassword = String(resetNewPasswordInput?.value || "").trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      if (resetConfirmError) {
+        resetConfirmError.textContent = "Digite um codigo de 6 digitos.";
+      }
+      return;
+    }
+
+    const result = confirmPasswordReset(email, code, newPassword);
+    if (!result.ok) {
+      if (resetConfirmError) {
+        resetConfirmError.textContent = result.message;
+      }
+      return;
+    }
+
+    showLoginStep();
+    if (errorEl) {
+      errorEl.style.color = "#1b5e20";
+      errorEl.textContent =
+        "Senha redefinida com sucesso. Faca login com a nova senha.";
+    }
+    usernameInput?.focus();
+  });
+
   codeForm?.addEventListener("submit", (event) => {
     event.preventDefault();
 
@@ -150,6 +315,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (pendingChallenge) {
     openCodeStep(
       `Login Google pendente para ${pendingChallenge.email}. Digite o codigo de 6 digitos.`,
+    );
+  }
+
+  const pendingReset = getPasswordResetChallenge();
+  if (pendingReset?.email && pendingReset?.expiresAt > Date.now()) {
+    showResetConfirmStep(
+      pendingReset.email,
+      `Redefinicao pendente para ${pendingReset.email}. Digite o codigo recebido por e-mail.`,
     );
   }
 });
